@@ -90,7 +90,10 @@ func _ready() -> void:
 	print("[GalaxyMapUI] Initializing Galaxy Map UI...")
 	clip_contents = true
 	
-	# Populate console logs with mockup logs to look exactly like the design draft on startup
+	# Visual Mockup Design Alignment:
+	# Initializes the bottom console message log with the exact static logs matching the mockup design.
+	# This ensures the game client matches the sci-fi presentation draft immediately on startup
+	# before new live game events and combat battle logs are appended dynamically.
 	logs_text.text = (
 		"[2026-06-20 10:58:31] Command line startup procedures.\n" +
 		"[2026-06-20 10:58:37] Status messages completed.\n" +
@@ -2016,25 +2019,34 @@ func _setup_dynamic_popups() -> void:
 	$MainLayout/MapContainer.add_theme_stylebox_override("panel", empty_style)
 	$MainLayout/MapContainer.clip_contents = true
 
-	# 1. Create console overlay at the bottom of MapContainer
+	# =========================================================================
+	# 1. BOTTOM CONSOLE OVERLAY CREATION
+	# =========================================================================
+	# Create the console container at the bottom. The console displays combat
+	# battle reports (战报) and system broadcast logs.
 	console_overlay = PanelContainer.new()
-	console_overlay.custom_minimum_size = Vector2(0, 135)
+	console_overlay.custom_minimum_size = Vector2(0, 135) # Height matching UI mockup
 	console_overlay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
+	# Custom Flat StyleBox with deep dark translucent glass background
 	var c_style = StyleBoxFlat.new()
-	c_style.bg_color = Color(0.02, 0.04, 0.06, 0.85) # deep dark translucent glass
+	c_style.bg_color = Color(0.02, 0.04, 0.06, 0.85) # 85% opacity dark blue-grey backdrop
 	c_style.corner_radius_top_left = 8
 	c_style.corner_radius_top_right = 8
 	c_style.corner_radius_bottom_left = 8
 	c_style.corner_radius_bottom_right = 8
 	
-	# Internal padding so text doesn't touch borders
+	# Content Margins configuration:
+	# Content margins determine the padding for inner child controls (ConsoleBox).
+	# Set L/R to 16px and T/B to 14px to leave enough distance from the outer FrameDrawer border
+	# (which is drawn at x=1px / y=7px locally). This stops logs from clipping the cyan borders.
 	c_style.content_margin_left = 16
 	c_style.content_margin_top = 14
 	c_style.content_margin_right = 16
 	c_style.content_margin_bottom = 14
 	console_overlay.add_theme_stylebox_override("panel", c_style)
-	# Style console logs text
+	
+	# Font styling: set log messages to small monospace sci-fi theme
 	logs_text.add_theme_font_size_override("font_size", 10)
 	logs_text.add_theme_color_override("font_color", Color(0.7, 0.85, 0.9, 0.95))
 	
@@ -2043,22 +2055,24 @@ func _setup_dynamic_popups() -> void:
 	$MainLayout/RightPanel.remove_child(console_box)
 	
 	# Let the parent PanelContainer manage console_box layout entirely
+	# Do not manually override anchors/offsets to prevent layout breakdown
 	console_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	console_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	
-	# Hide/remove the console header to maximize spacing and match the mockup
+	# Hide/remove the legacy grey HUD header color rect to maximize usable screen real estate
 	var console_header = console_box.get_node_or_null("Header")
 	if console_header:
 		console_header.visible = false
 		console_header.queue_free()
 		
-	# Style ScrollContainer and its scrollbar to be a thin cyan grabber
+	# Customize the ScrollContainer vertical scrollbar to match a thin cyan cyberpunk aesthetic
 	var scroll = logs_text.get_parent() as ScrollContainer
 	if scroll:
 		var v_bar = scroll.get_v_scroll_bar()
 		if v_bar:
+			# Thin neon cyan thumb grabber
 			var thumb = StyleBoxFlat.new()
-			thumb.bg_color = Color(0.0, 0.85, 1.0, 0.6)
+			thumb.bg_color = Color(0.0, 0.85, 1.0, 0.6) # 60% opacity cyan
 			thumb.corner_radius_top_left = 2
 			thumb.corner_radius_top_right = 2
 			thumb.corner_radius_bottom_left = 2
@@ -2067,23 +2081,27 @@ func _setup_dynamic_popups() -> void:
 			v_bar.add_theme_stylebox_override("grabber_highlight", thumb)
 			v_bar.add_theme_stylebox_override("grabber_pressed", thumb)
 			
+			# Invisible scrollbar track to maintain clean visual look
 			var track = StyleBoxFlat.new()
 			track.bg_color = Color(0, 0, 0, 0)
 			v_bar.add_theme_stylebox_override("scroll", track)
 	
-	# Margin around console box inside overlay
+	# Outer spacing: MarginContainer around the console overlay to prevent it from touching screen edges
 	var c_margin = MarginContainer.new()
 	c_margin.add_theme_constant_override("margin_left", 10)
 	c_margin.add_theme_constant_override("margin_top", 5)
 	c_margin.add_theme_constant_override("margin_right", 10)
 	c_margin.add_theme_constant_override("margin_bottom", 10)
 	
-	# FrameDrawer is added to c_margin as a sibling to console_overlay
-	# so it draws at the outer edge, while console_box text respects PanelContainer content margins
+	# Sibling Container Layout Strategy:
+	# Add console_box inside console_overlay (PanelContainer) so it is correctly padded by L=16/T=14.
+	# Add console_overlay and FrameDrawer (procedural border drawer) as siblings inside c_margin.
+	# This ensures both stretch to the same outer size, so FrameDrawer can draw borders at the 
+	# very outer edge, leaving a perfect 15px gap from the text inside, preventing text clipping.
 	var frame_drawer = FrameDrawer.new()
 	frame_drawer.name = "FrameDrawer"
 	frame_drawer.set_anchors_preset(Control.PRESET_FULL_RECT)
-	frame_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE # Ignore clicks so star map can be clicked
 	
 	console_overlay.add_child(console_box)
 	c_margin.add_child(console_overlay)
@@ -3853,62 +3871,71 @@ func _clean_and_style_hud_header(panel: VBoxContainer, title_text: String, is_de
 			header.queue_free()
 
 
-# Custom Control to draw the sci-fi console border procedurally matching the mockup
+# Custom Control to draw the sci-fi console border procedurally matching the mockup.
+# Drawn using real-time vector graphics in Godot's 2D canvas drawing pipeline.
+# Renders a custom polygon outline with beveled corners, neon glow passes, and outer corner tick accents.
 class FrameDrawer extends Control:
 	func _draw() -> void:
 		var s = size
-		var T = 7.0
-		var B = s.y - 7.0
-		var L = 1.0
-		var R = s.x - 1.0
+		var T = 7.0         # Top border base Y offset (leaves room for the raised center step)
+		var B = s.y - 7.0   # Bottom border base Y offset (leaves room for the lowered center step)
+		var L = 1.0         # Left border X offset
+		var R = s.x - 1.0   # Right border X offset
 		var mid_x = s.x / 2.0
 		
-		# Define main border points with raised/lowered steps in the middle
+		# Define main border points with raised/lowered steps in the middle to match mockup
 		var pts = PackedVector2Array()
 		# Top-left corner
 		pts.append(Vector2(L + 12, T))
 		# Top border left segment
 		pts.append(Vector2(mid_x - 120, T))
-		# Top border step up
+		# Top border step up (raises 6px higher)
 		pts.append(Vector2(mid_x - 110, T - 6))
-		# Top border raised center segment
+		# Top border raised center segment (encases center components)
 		pts.append(Vector2(mid_x + 110, T - 6))
 		# Top border step down
 		pts.append(Vector2(mid_x + 120, T))
 		# Top border right segment
 		pts.append(Vector2(R - 12, T))
-		# Top-right corner bevel
+		# Top-right corner bevel (45-degree angled cut)
 		pts.append(Vector2(R, T + 12))
-		# Right border
+		# Right border vertical segment
 		pts.append(Vector2(R, B - 12))
-		# Bottom-right corner bevel
+		# Bottom-right corner bevel (45-degree angled cut)
 		pts.append(Vector2(R - 12, B))
 		# Bottom border right segment
 		pts.append(Vector2(mid_x + 120, B))
-		# Bottom border step down
+		# Bottom border step down (lowers 6px deeper)
 		pts.append(Vector2(mid_x + 110, B + 6))
-		# Bottom border lowered center segment
+		# Bottom border lowered center segment (leaves room for bottom spacing)
 		pts.append(Vector2(mid_x - 110, B + 6))
 		# Bottom border step up
 		pts.append(Vector2(mid_x - 120, B))
 		# Bottom border left segment
 		pts.append(Vector2(L + 12, B))
-		# Bottom-left corner bevel
+		# Bottom-left corner bevel (45-degree angled cut)
 		pts.append(Vector2(L, B - 12))
-		# Left border
+		# Left border vertical segment
 		pts.append(Vector2(L, T + 12))
-		# Close loop
+		# Close loop back to start
 		pts.append(Vector2(L + 12, T))
 		
-		# Draw outer soft glow passes
+		# Draw outer soft glow passes (simulates bloom/glow using layered alpha transparency)
+		# 1. Broad soft outer bleed (10px wide, 5% alpha)
 		draw_polyline(pts, Color(0.0, 0.85, 1.0, 0.05), 10.0, true)
+		# 2. Medium outer glow (6px wide, 15% alpha)
 		draw_polyline(pts, Color(0.0, 0.85, 1.0, 0.15), 6.0, true)
+		# 3. Tight inner glow (3px wide, 30% alpha)
 		draw_polyline(pts, Color(0.0, 0.85, 1.0, 0.3), 3.0, true)
-		# Draw core neon cyan line
+		# 4. Core neon cyan line (1.5px wide, 75% alpha)
 		draw_polyline(pts, Color(0.0, 0.85, 1.0, 0.75), 1.5, true)
 		
-		# Draw corner decorative accents parallel to the bevels for a futuristic feel
+		# Draw corner decorative accents parallel to the bevels for a futuristic cockpit feel
+		# Accent line at Top-Left Corner Bevel
 		draw_line(Vector2(L + 16, T - 3), Vector2(L - 3, T + 16), Color(0.0, 0.85, 1.0, 0.5), 1.0, true)
+		# Accent line at Top-Right Corner Bevel
 		draw_line(Vector2(R - 16, T - 3), Vector2(R + 3, T + 16), Color(0.0, 0.85, 1.0, 0.5), 1.0, true)
+		# Accent line at Bottom-Left Corner Bevel
 		draw_line(Vector2(L + 16, B + 3), Vector2(L - 3, B - 16), Color(0.0, 0.85, 1.0, 0.5), 1.0, true)
+		# Accent line at Bottom-Right Corner Bevel
 		draw_line(Vector2(R - 16, B + 3), Vector2(R + 3, B - 16), Color(0.0, 0.85, 1.0, 0.5), 1.0, true)
