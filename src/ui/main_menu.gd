@@ -343,9 +343,12 @@ func _show_settings_popup() -> void:
 	)
 	
 	confirm_btn.pressed.connect(func():
-		# Delete old save to start fresh
+		# Delete old save and blueprints to start fresh
 		if FileAccess.file_exists(SAVE_PATH):
 			DirAccess.remove_absolute(SAVE_PATH)
+		var bp_path = "user://ssw_blueprints.json"
+		if FileAccess.file_exists(bp_path):
+			DirAccess.remove_absolute(bp_path)
 			
 		# Save selections to static properties of MainGameHub
 		var hub_script = load("res://src/ui/main_game_hub.gd")

@@ -19,6 +19,7 @@ var global_resources: Dictionary = {}
 var blueprints: Dictionary = {}
 var selected_bp_name: String = ""
 const BLUEPRINTS_SAVE_PATH = "user://ssw_blueprints.json"
+var delete_button: Button
 
 func initialize(p_planet: Planet, p_global_res: Dictionary) -> void:
 	planet = p_planet
@@ -288,6 +289,79 @@ func _ready() -> void:
 			build_button.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
 			build_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			
+			# Create delete blueprint button programmatically
+			delete_button = Button.new()
+			delete_button.name = "DeleteBlueprintButton"
+			delete_button.text = "删除蓝图"
+			delete_button.custom_minimum_size = Vector2(90, 32)
+			delete_button.size_flags_vertical = SIZE_SHRINK_CENTER
+			right_hbox.add_child(delete_button)
+			
+			# Red warning stylebox for delete button
+			var del_normal = StyleBoxFlat.new()
+			del_normal.bg_color = Color(0.35, 0.12, 0.12, 0.8)
+			del_normal.border_width_left = 1
+			del_normal.border_width_top = 1
+			del_normal.border_width_right = 1
+			del_normal.border_width_bottom = 1
+			del_normal.border_color = Color(1.0, 0.3, 0.2, 1.0)
+			del_normal.corner_radius_top_left = 4
+			del_normal.corner_radius_top_right = 4
+			del_normal.corner_radius_bottom_left = 4
+			del_normal.corner_radius_bottom_right = 4
+			del_normal.shadow_color = Color(1.0, 0.3, 0.2, 0.25)
+			del_normal.shadow_size = 5
+			
+			var del_hover = StyleBoxFlat.new()
+			del_hover.bg_color = Color(0.45, 0.15, 0.15, 0.9)
+			del_hover.border_width_left = 1
+			del_hover.border_width_top = 1
+			del_hover.border_width_right = 1
+			del_hover.border_width_bottom = 1
+			del_hover.border_color = Color(1.0, 0.45, 0.35, 1.0)
+			del_hover.corner_radius_top_left = 4
+			del_hover.corner_radius_top_right = 4
+			del_hover.corner_radius_bottom_left = 4
+			del_hover.corner_radius_bottom_right = 4
+			del_hover.shadow_color = Color(1.0, 0.3, 0.2, 0.4)
+			del_hover.shadow_size = 8
+			
+			var del_pressed = StyleBoxFlat.new()
+			del_pressed.bg_color = Color(0.28, 0.08, 0.08, 0.9)
+			del_pressed.border_width_left = 1
+			del_pressed.border_width_top = 1
+			del_pressed.border_width_right = 1
+			del_pressed.border_width_bottom = 1
+			del_pressed.border_color = Color(1.0, 0.3, 0.2, 1.0)
+			del_pressed.corner_radius_top_left = 4
+			del_pressed.corner_radius_top_right = 4
+			del_pressed.corner_radius_bottom_left = 4
+			del_pressed.corner_radius_bottom_right = 4
+			
+			var del_disabled = StyleBoxFlat.new()
+			del_disabled.bg_color = Color(0.15, 0.12, 0.12, 0.5)
+			del_disabled.border_width_left = 1
+			del_disabled.border_width_top = 1
+			del_disabled.border_width_right = 1
+			del_disabled.border_width_bottom = 1
+			del_disabled.border_color = Color(0.3, 0.2, 0.2, 0.5)
+			del_disabled.corner_radius_top_left = 4
+			del_disabled.corner_radius_top_right = 4
+			del_disabled.corner_radius_bottom_left = 4
+			del_disabled.corner_radius_bottom_right = 4
+			del_disabled.shadow_size = 0
+			
+			delete_button.add_theme_stylebox_override("normal", del_normal)
+			delete_button.add_theme_stylebox_override("hover", del_hover)
+			delete_button.add_theme_stylebox_override("pressed", del_pressed)
+			delete_button.add_theme_stylebox_override("disabled", del_disabled)
+			delete_button.add_theme_stylebox_override("focus", del_normal)
+			delete_button.add_theme_color_override("font_color", Color(1, 1, 1))
+			delete_button.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+			delete_button.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
+			delete_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			delete_button.pressed.connect(_on_delete_blueprint_pressed)
+			
 			# Swap build_control layout node with the new panel
 			var idx = build_control.get_index()
 			detail_layout.remove_child(build_control)
@@ -403,6 +477,8 @@ func _update_detail_view() -> void:
 		if ship_preview:
 			ship_preview.texture = null
 			ship_preview.visible = false
+		if delete_button:
+			delete_button.disabled = true
 		return
 		
 	var bp = blueprints[selected_bp_name]
@@ -452,6 +528,8 @@ func _update_detail_view() -> void:
 	]
 	
 	quantity_spin.editable = true
+	if delete_button:
+		delete_button.disabled = false
 	_on_quantity_changed(quantity_spin.value)
 
 func _on_quantity_changed(value: float) -> void:
@@ -679,3 +757,21 @@ func _get_system_shipyard_level() -> int:
 		if p.owner_name == planet.owner_name:
 			total_lvl += p.get_building_total_level("shipyard")
 	return total_lvl
+
+func _on_delete_blueprint_pressed() -> void:
+	if selected_bp_name == "" or not blueprints.has(selected_bp_name):
+		return
+		
+	blueprints.erase(selected_bp_name)
+	
+	# Save updated blueprints to local file
+	var file = FileAccess.open(BLUEPRINTS_SAVE_PATH, FileAccess.WRITE)
+	if file:
+		var json_str = JSON.stringify(blueprints)
+		file.store_string(json_str)
+		file.close()
+		print("[ShipyardUI] Blueprint deleted successfully, updated: ", BLUEPRINTS_SAVE_PATH)
+		
+	# Refresh UI
+	_reload_blueprints()
+	_update_detail_view()
