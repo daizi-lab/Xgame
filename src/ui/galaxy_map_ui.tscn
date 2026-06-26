@@ -1,0 +1,173 @@
+[gd_scene load_steps=3 format=3 uid="uid://c5t5o8y"]
+
+[ext_resource type="Script" path="res://src/ui/galaxy_map_ui.gd" id="1_script"]
+[ext_resource type="Script" path="res://src/ui/galaxy_map_draw.gd" id="2_draw_script"]
+
+[node name="GalaxyMapUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch_mode = 1
+
+[node name="MainLayout" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="MapContainer" type="PanelContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ColorRect" type="ColorRect" parent="MainLayout/MapContainer"]
+layout_mode = 2
+color = Color(0.0627451, 0.0745098, 0.0980392, 1)
+
+[node name="MapDraw" type="Control" parent="MainLayout/MapContainer"]
+layout_mode = 2
+script = ExtResource("2_draw_script")
+
+[node name="RightPanel" type="VBoxContainer" parent="MainLayout"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="DetailsPanel" type="VBoxContainer" parent="MainLayout/RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="ColorRect" parent="MainLayout/RightPanel/DetailsPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="SystemName" type="Label" parent="MainLayout/RightPanel/DetailsPanel/Header"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "星系详情 (Star System)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InfoBox" type="VBoxContainer" parent="MainLayout/RightPanel/DetailsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Owner" type="Label" parent="MainLayout/RightPanel/DetailsPanel/InfoBox"]
+layout_mode = 2
+text = "控制势力: 未知"
+
+[node name="Coordinates" type="Label" parent="MainLayout/RightPanel/DetailsPanel/InfoBox"]
+layout_mode = 2
+text = "星区坐标: (0, 0)"
+
+[node name="Connections" type="Label" parent="MainLayout/RightPanel/DetailsPanel/InfoBox"]
+layout_mode = 2
+text = "连通星路: 无"
+
+[node name="FleetsHeader" type="Label" parent="MainLayout/RightPanel/DetailsPanel"]
+layout_mode = 2
+text = "  驻扎舰队 (Stationed Fleets):"
+
+[node name="FleetsScroll" type="ScrollContainer" parent="MainLayout/RightPanel/DetailsPanel"]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+
+[node name="FleetsList" type="VBoxContainer" parent="MainLayout/RightPanel/DetailsPanel/FleetsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="ControlBox" type="VBoxContainer" parent="MainLayout/RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="ColorRect" parent="MainLayout/RightPanel/ControlBox"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/ControlBox/Header"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "航行指令 (Navigation Command)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Destination" type="HBoxContainer" parent="MainLayout/RightPanel/ControlBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/ControlBox/Destination"]
+layout_mode = 2
+text = "目标星系:"
+
+[node name="TargetOption" type="OptionButton" parent="MainLayout/RightPanel/ControlBox/Destination"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SendButton" type="Button" parent="MainLayout/RightPanel/ControlBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "派遣舰队 (Dispatch Fleet)"
+
+[node name="ConsoleBox" type="VBoxContainer" parent="MainLayout/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 5
+
+[node name="Header" type="ColorRect" parent="MainLayout/RightPanel/ConsoleBox"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/ConsoleBox/Header"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "星际广播与战报 (Combat Broadcast)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LogsScroll" type="ScrollContainer" parent="MainLayout/RightPanel/ConsoleBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LogsText" type="Label" parent="MainLayout/RightPanel/ConsoleBox/LogsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.380392, 0.541176, 0.760784, 1)
+theme_override_font_sizes/font_size = 12
+text = "[系统广播]: 等待指令..."
+autowrap_mode = 3

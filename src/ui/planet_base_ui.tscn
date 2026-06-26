@@ -1,0 +1,92 @@
+[gd_scene load_steps=2 format=3 uid="uid://ddy5o8y"]
+
+[ext_resource type="Script" path="res://src/ui/planet_base_ui.gd" id="1_script"]
+
+[node name="PlanetBaseUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="MainLayout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="Header" type="ColorRect" parent="MainLayout"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/Header"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "母星基地建设 (Home Base Infrastructure)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BuildingsGrid" type="GridContainer" parent="MainLayout/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/horizontal_separation = 10
+theme_override_constants/vertical_separation = 10
+columns = 3
+
+[node name="QueuePanel" type="PanelContainer" parent="MainLayout"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="ColorRect" type="ColorRect" parent="MainLayout/QueuePanel"]
+layout_mode = 2
+color = Color(0.0784314, 0.0901961, 0.113725, 1)
+
+[node name="Layout" type="HBoxContainer" parent="MainLayout/QueuePanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Spacer" type="Control" parent="MainLayout/QueuePanel/Layout"]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MainLayout/QueuePanel/Layout"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "建造队列: 空闲"
+vertical_alignment = 1
+
+[node name="Progress" type="ProgressBar" parent="MainLayout/QueuePanel/Layout"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="TimeLabel" type="Label" parent="MainLayout/QueuePanel/Layout"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "0.0s"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Spacer2" type="Control" parent="MainLayout/QueuePanel/Layout"]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2

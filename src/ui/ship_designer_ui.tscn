@@ -1,0 +1,273 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8t7o8y"]
+
+[ext_resource type="Script" path="res://src/ui/ship_designer_ui.gd" id="1_script"]
+
+[node name="ShipDesignerUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0588235, 0.0666667, 0.0862745, 1)
+
+[node name="MainLayout" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="LeftPanel" type="VBoxContainer" parent="MainLayout"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PanelHeader" type="ColorRect" parent="MainLayout/LeftPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/LeftPanel/PanelHeader"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "组件库 (Components)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TabBar" type="TabBar" parent="MainLayout/LeftPanel"]
+layout_mode = 2
+current_tab = 0
+tab_count = 3
+tab_0/title = "武器"
+tab_1/title = "护盾与装甲"
+tab_2/title = "辅助设备"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MainLayout/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ComponentList" type="VBoxContainer" parent="MainLayout/LeftPanel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="CenterPanel" type="VBoxContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 15
+
+[node name="PanelHeader" type="ColorRect" parent="MainLayout/CenterPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/CenterPanel/PanelHeader"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "战舰装配区 (Assembly Yard)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HullSelection" type="HBoxContainer" parent="MainLayout/CenterPanel"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MainLayout/CenterPanel/HullSelection"]
+layout_mode = 2
+text = "选择船体: "
+
+[node name="HullOption" type="OptionButton" parent="MainLayout/CenterPanel/HullSelection"]
+custom_minimum_size = Vector2(180, 30)
+layout_mode = 2
+
+[node name="HullPreview" type="TextureRect" parent="MainLayout/CenterPanel"]
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SlotsScroll" type="ScrollContainer" parent="MainLayout/CenterPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SlotsContainer" type="VBoxContainer" parent="MainLayout/CenterPanel/SlotsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+
+[node name="WeaponSection" type="VBoxContainer" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer/WeaponSection"]
+layout_mode = 2
+text = "  武器插槽 (Weapons)"
+
+[node name="Grid" type="GridContainer" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer/WeaponSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+columns = 2
+
+[node name="ShieldSection" type="VBoxContainer" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer/ShieldSection"]
+layout_mode = 2
+text = "  防御插槽 (Shields & Armor)"
+
+[node name="Grid" type="GridContainer" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer/ShieldSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+columns = 2
+
+[node name="UtilitySection" type="VBoxContainer" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer/UtilitySection"]
+layout_mode = 2
+text = "  辅助插槽 (Utilities)"
+
+[node name="Grid" type="GridContainer" parent="MainLayout/CenterPanel/SlotsScroll/SlotsContainer/UtilitySection"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+columns = 2
+
+[node name="RightPanel" type="VBoxContainer" parent="MainLayout"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="PanelHeader" type="ColorRect" parent="MainLayout/RightPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/PanelHeader"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "设计蓝图与指标 (Specifications)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameInput" type="HBoxContainer" parent="MainLayout/RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/NameInput"]
+layout_mode = 2
+text = "蓝图名称:"
+
+[node name="LineEdit" type="LineEdit" parent="MainLayout/RightPanel/NameInput"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "输入自定义名称..."
+
+[node name="StatsBox" type="VBoxContainer" parent="MainLayout/RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="WeightProgress" type="VBoxContainer" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/StatsBox/WeightProgress"]
+layout_mode = 2
+text = "载重平衡 (Weight): 0.0 / 0.0"
+
+[node name="Bar" type="ProgressBar" parent="MainLayout/RightPanel/StatsBox/WeightProgress"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+show_percentage = false
+
+[node name="EnergyProgress" type="VBoxContainer" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/StatsBox/EnergyProgress"]
+layout_mode = 2
+text = "电力平衡 (Energy): 0.0 / 0.0"
+
+[node name="Bar" type="ProgressBar" parent="MainLayout/RightPanel/StatsBox/EnergyProgress"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+show_percentage = false
+
+[node name="Divider" type="HSeparator" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+
+[node name="HP" type="Label" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+text = "基础结构点数 (Hull HP): 0"
+
+[node name="Shield" type="Label" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+text = "能量护盾点数 (Shield HP): 0"
+
+[node name="Armor" type="Label" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+text = "复合纳米装甲 (Armor HP): 0"
+
+[node name="Speed" type="Label" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+text = "巡航动力速度 (Speed): 0"
+
+[node name="Divider2" type="HSeparator" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+
+[node name="Cost" type="Label" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+text = "制造预计耗资 (Estimated Cost):"
+
+[node name="CostDetail" type="Label" parent="MainLayout/RightPanel/StatsBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.819608, 0.658824, 0.231373, 1)
+text = "金属: 0  |  晶体: 0  |  重氢: 0"
+
+[node name="Spacer" type="Control" parent="MainLayout/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="WarningLabel" type="Label" parent="MainLayout/RightPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85098, 0.298039, 0.258824, 1)
+autowrap_mode = 3
+
+[node name="SaveButton" type="Button" parent="MainLayout/RightPanel"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "保存战舰蓝图 (Save Design)"

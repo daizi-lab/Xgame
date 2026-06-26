@@ -1,0 +1,13 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Build artifacts and executables
+*.exe
+*.pck
+运行程序/
+
+# Logs and runtime generated files
+*.log
+*.txt
+last_battle_report.json

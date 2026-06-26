@@ -1,0 +1,188 @@
+[gd_scene load_steps=2 format=3 uid="uid://dg05o8y"]
+
+[ext_resource type="Script" path="res://src/ui/shipyard_ui.gd" id="1_script"]
+
+[node name="ShipyardUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="MainLayout" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="LeftPanel" type="VBoxContainer" parent="MainLayout"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="ColorRect" parent="MainLayout/LeftPanel"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/LeftPanel/Header"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "自定义蓝图库 (Blueprints)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="MainLayout/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BlueprintList" type="VBoxContainer" parent="MainLayout/LeftPanel/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="RightPanel" type="VBoxContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 15
+
+[node name="BuildBox" type="VBoxContainer" parent="MainLayout/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="Header" type="ColorRect" parent="MainLayout/RightPanel/BuildBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/BuildBox/Header"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "造船车间 (Shipyard Workshop)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Panel" type="PanelContainer" parent="MainLayout/RightPanel/BuildBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DetailLayout" type="VBoxContainer" parent="MainLayout/RightPanel/BuildBox/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Spacer" type="Control" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+
+[node name="DesignName" type="Label" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+layout_mode = 2
+text = "  请选择左侧蓝图进行建造..."
+
+[node name="ShipPreview" type="TextureRect" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+custom_minimum_size = Vector2(0, 115)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DesignStats" type="Label" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65098, 0.698039, 0.768627, 1)
+text = "  - 船体: 无\n  - 武器配置: 无\n  - 护盾装甲: 无"
+
+[node name="Divider" type="HSeparator" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+layout_mode = 2
+
+[node name="CostLabel" type="Label" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+layout_mode = 2
+text = "  单舰造价:"
+
+[node name="CostText" type="RichTextLabel" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.819608, 0.658824, 0.231373, 1)
+bbcode_enabled = true
+fit_content = true
+text = "  金属: 0 | 晶体: 0 | 重氢: 0"
+
+[node name="Spacer2" type="Control" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BuildControl" type="HBoxContainer" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 15
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout/BuildControl"]
+layout_mode = 2
+text = "建造数量:"
+
+[node name="QuantitySpinBox" type="SpinBox" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout/BuildControl"]
+custom_minimum_size = Vector2(100, 30)
+layout_mode = 2
+min_value = 1.0
+value = 1.0
+rounded = true
+
+[node name="TotalCostText" type="RichTextLabel" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout/BuildControl"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.819608, 0.658824, 0.231373, 1)
+bbcode_enabled = true
+fit_content = true
+text = "总价: 金属 0 | 晶体 0"
+
+[node name="BuildButton" type="Button" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout/BuildControl"]
+custom_minimum_size = Vector2(120, 35)
+layout_mode = 2
+text = "开始建造"
+
+[node name="Spacer3" type="Control" parent="MainLayout/RightPanel/BuildBox/Panel/DetailLayout"]
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+
+[node name="QueueBox" type="VBoxContainer" parent="MainLayout/RightPanel"]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="ColorRect" parent="MainLayout/RightPanel/QueueBox"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+color = Color(0.109804, 0.129412, 0.168627, 1)
+
+[node name="Label" type="Label" parent="MainLayout/RightPanel/QueueBox/Header"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "建造队列 (Construction Queue)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="MainLayout/RightPanel/QueueBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="QueueList" type="VBoxContainer" parent="MainLayout/RightPanel/QueueBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 5

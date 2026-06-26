@@ -1,0 +1,69 @@
+[gd_scene format=3 uid="uid://c6t5o8y"]
+
+[ext_resource type="Script" path="res://src/ui/main_menu.gd" id="1_script"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0470588, 0.054902, 0.0705882, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="Title" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.180392, 0.619608, 0.819608, 1)
+theme_override_font_sizes/font_size = 32
+text = "战略家 (Zhanlvejia) - SSW Remake"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="Center/VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(250, 45)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "开始新游戏 (Start Game)"
+
+[node name="ContinueButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(250, 45)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "继续游戏 (Continue)"
+
+[node name="MultiplayerButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(250, 45)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "联机多人游戏 (Multiplayer)"
+
+[node name="ExitButton" type="Button" parent="Center/VBox"]
+custom_minimum_size = Vector2(250, 45)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "退出游戏 (Exit)"
