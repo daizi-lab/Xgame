@@ -647,15 +647,31 @@ func _run_player_auto_manage() -> void:
 								target_building = "shipyard"
 								
 				var slot_to_upgrade = -1
+				var min_lvl = 99999
 				for idx in range(p.buildings.size()):
 					if p.buildings[idx]["type"] == target_building:
-						slot_to_upgrade = idx
-						break
+						var is_upgrading = false
+						for upg in p.active_upgrades:
+							if upg.get("slot_index", -1) == idx:
+								is_upgrading = true
+								break
+						if not is_upgrading:
+							var lvl = p.buildings[idx].get("level", 0)
+							if lvl < min_lvl:
+								min_lvl = lvl
+								slot_to_upgrade = idx
+								
 				if slot_to_upgrade == -1:
-					for idx in range(p.buildings.size()):
-						if p.buildings[idx]["type"] == "empty":
-							slot_to_upgrade = idx
+					var has_any = false
+					for b in p.buildings:
+						if b["type"] == target_building:
+							has_any = true
 							break
+					if not has_any:
+						for idx in range(p.buildings.size()):
+							if p.buildings[idx]["type"] == "empty":
+								slot_to_upgrade = idx
+								break
 							
 				if slot_to_upgrade != -1:
 					p.start_building_upgrade(slot_to_upgrade, target_building, res_pool)
@@ -811,15 +827,31 @@ func _run_ai_for_faction(faction_name: String) -> void:
 								target_building = "shipyard"
 								
 				var slot_to_upgrade = -1
+				var min_lvl = 99999
 				for idx in range(p.buildings.size()):
 					if p.buildings[idx]["type"] == target_building:
-						slot_to_upgrade = idx
-						break
+						var is_upgrading = false
+						for upg in p.active_upgrades:
+							if upg.get("slot_index", -1) == idx:
+								is_upgrading = true
+								break
+						if not is_upgrading:
+							var lvl = p.buildings[idx].get("level", 0)
+							if lvl < min_lvl:
+								min_lvl = lvl
+								slot_to_upgrade = idx
+								
 				if slot_to_upgrade == -1:
-					for idx in range(p.buildings.size()):
-						if p.buildings[idx]["type"] == "empty":
-							slot_to_upgrade = idx
+					var has_any = false
+					for b in p.buildings:
+						if b["type"] == target_building:
+							has_any = true
 							break
+					if not has_any:
+						for idx in range(p.buildings.size()):
+							if p.buildings[idx]["type"] == "empty":
+								slot_to_upgrade = idx
+								break
 							
 				if slot_to_upgrade != -1:
 					var success = p.start_building_upgrade(slot_to_upgrade, target_building, faction_res)
