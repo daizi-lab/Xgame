@@ -665,6 +665,15 @@ func _play_next_event() -> void:
 		"color": proj_color
 	}
 	
+	# Play attack sound effect based on weapon type
+	if ev.get("weapon_type") == "laser":
+		AudioManager.play_laser()
+	elif ev.get("weapon_type") == "railgun":
+		AudioManager.play_railgun()
+	else:
+		# For missiles/other custom weapons, default to laser or similar
+		AudioManager.play_laser()
+	
 	var log_line = ""
 	var weapon_tag = "[color=yellow][%s][/color]" % ev["weapon_name"]
 	var attacker_tag = "[color=cyan]%s[/color]" % ev["attacker_name"]
@@ -705,6 +714,7 @@ func _play_next_event() -> void:
 					"color": Color(0.2, 1.0, 0.2),
 					"lifetime": 0.8
 				})
+			AudioManager.play_explosion()
 		)
 		
 		if ev["is_destroyed"]:
@@ -731,6 +741,7 @@ func _play_next_event() -> void:
 						"lifetime": 0.6
 					})
 				_update_fleet_hp_bars()
+				AudioManager.play_explosion(0.65) # Heavier explosion sound
 			)
 	else:
 		log_line = "* %s 使用 %s 射击 %s，[color=gray]未能命中 (Miss)[/color]" % [attacker_tag, weapon_tag, defender_tag]

@@ -111,6 +111,15 @@ func start_building_upgrade(slot_index: int, proposed_type: String, global_res: 
 	if buildings[slot_index]["type"] == "empty" and proposed_type.is_empty():
 		return false
 		
+	# Check maximum level limit of 20
+	var current_level = buildings[slot_index]["level"]
+	var pending_upgrades = 0
+	for upg in active_upgrades:
+		if upg.get("slot_index", -1) == slot_index:
+			pending_upgrades += 1
+	if current_level + pending_upgrades >= 20:
+		return false
+		
 	var cost = get_slot_upgrade_cost(slot_index, proposed_type)
 	if not _has_resources(cost, global_res):
 		return false

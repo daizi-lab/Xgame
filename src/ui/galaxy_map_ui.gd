@@ -90,6 +90,17 @@ func _ready() -> void:
 	print("[GalaxyMapUI] Initializing Galaxy Map UI...")
 	clip_contents = true
 	
+	# Populate console logs with mockup logs to look exactly like the design draft on startup
+	logs_text.text = (
+		"[2026-06-20 10:58:31] Command line startup procedures.\n" +
+		"[2026-06-20 10:58:37] Status messages completed.\n" +
+		"[2026-06-20 10:58:37] Status stack compiled.\n" +
+		"[2026-05-30 16:38:37] Completed environment setup.\n" +
+		"[2026-06-20 10:58:37] Status log console ready for incoming movements.\n" +
+		"[2026-06-20 10:58:32] Status message: active.\n" +
+		"[2026-06-20 10:58:38] Command console listening for incoming messages."
+	)
+	
 	# Load space background
 	var bg = get_node_or_null("Background")
 	if bg and bg is TextureRect:
@@ -2007,28 +2018,58 @@ func _setup_dynamic_popups() -> void:
 
 	# 1. Create console overlay at the bottom of MapContainer
 	console_overlay = PanelContainer.new()
-	console_overlay.custom_minimum_size = Vector2(0, 130)
+	console_overlay.custom_minimum_size = Vector2(0, 135)
 	console_overlay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
 	var c_style = StyleBoxFlat.new()
-	c_style.bg_color = Color(0.06, 0.08, 0.12, 0.8)
-	c_style.border_width_left = 1
-	c_style.border_width_top = 1
-	c_style.border_width_right = 1
-	c_style.border_width_bottom = 1
-	c_style.border_color = Color(0.0, 0.75, 0.85, 0.4)
+	c_style.bg_color = Color(0.02, 0.04, 0.06, 0.85) # deep dark translucent glass
 	c_style.corner_radius_top_left = 8
 	c_style.corner_radius_top_right = 8
 	c_style.corner_radius_bottom_left = 8
 	c_style.corner_radius_bottom_right = 8
-	c_style.shadow_color = Color(0.0, 0.75, 0.85, 0.1)
-	c_style.shadow_size = 6
+	
+	# Internal padding so text doesn't touch borders
+	c_style.content_margin_left = 16
+	c_style.content_margin_top = 14
+	c_style.content_margin_right = 16
+	c_style.content_margin_bottom = 14
 	console_overlay.add_theme_stylebox_override("panel", c_style)
+	# Style console logs text
+	logs_text.add_theme_font_size_override("font_size", 10)
+	logs_text.add_theme_color_override("font_color", Color(0.7, 0.85, 0.9, 0.95))
 	
 	# Move ConsoleBox from RightPanel to console overlay
 	var console_box = $MainLayout/RightPanel/ConsoleBox
 	$MainLayout/RightPanel.remove_child(console_box)
-	_clean_and_style_hud_header(console_box, "星际广播与战报 (Combat Broadcast)")
+	
+	# Let the parent PanelContainer manage console_box layout entirely
+	console_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	console_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	
+	# Hide/remove the console header to maximize spacing and match the mockup
+	var console_header = console_box.get_node_or_null("Header")
+	if console_header:
+		console_header.visible = false
+		console_header.queue_free()
+		
+	# Style ScrollContainer and its scrollbar to be a thin cyan grabber
+	var scroll = logs_text.get_parent() as ScrollContainer
+	if scroll:
+		var v_bar = scroll.get_v_scroll_bar()
+		if v_bar:
+			var thumb = StyleBoxFlat.new()
+			thumb.bg_color = Color(0.0, 0.85, 1.0, 0.6)
+			thumb.corner_radius_top_left = 2
+			thumb.corner_radius_top_right = 2
+			thumb.corner_radius_bottom_left = 2
+			thumb.corner_radius_bottom_right = 2
+			v_bar.add_theme_stylebox_override("grabber", thumb)
+			v_bar.add_theme_stylebox_override("grabber_highlight", thumb)
+			v_bar.add_theme_stylebox_override("grabber_pressed", thumb)
+			
+			var track = StyleBoxFlat.new()
+			track.bg_color = Color(0, 0, 0, 0)
+			v_bar.add_theme_stylebox_override("scroll", track)
 	
 	# Margin around console box inside overlay
 	var c_margin = MarginContainer.new()
@@ -2037,8 +2078,16 @@ func _setup_dynamic_popups() -> void:
 	c_margin.add_theme_constant_override("margin_right", 10)
 	c_margin.add_theme_constant_override("margin_bottom", 10)
 	
+	# FrameDrawer is added to c_margin as a sibling to console_overlay
+	# so it draws at the outer edge, while console_box text respects PanelContainer content margins
+	var frame_drawer = FrameDrawer.new()
+	frame_drawer.name = "FrameDrawer"
+	frame_drawer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	frame_drawer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
 	console_overlay.add_child(console_box)
 	c_margin.add_child(console_overlay)
+	c_margin.add_child(frame_drawer)
 	
 	# Create a VBox to hold MapDraw and ConsoleOverlay vertically inside MapContainer
 	var map_container = $MainLayout/MapContainer
@@ -3802,3 +3851,64 @@ func _clean_and_style_hud_header(panel: VBoxContainer, title_text: String, is_de
 			panel.move_child(sep, 1)
 			
 			header.queue_free()
+
+
+# Custom Control to draw the sci-fi console border procedurally matching the mockup
+class FrameDrawer extends Control:
+	func _draw() -> void:
+		var s = size
+		var T = 7.0
+		var B = s.y - 7.0
+		var L = 1.0
+		var R = s.x - 1.0
+		var mid_x = s.x / 2.0
+		
+		# Define main border points with raised/lowered steps in the middle
+		var pts = PackedVector2Array()
+		# Top-left corner
+		pts.append(Vector2(L + 12, T))
+		# Top border left segment
+		pts.append(Vector2(mid_x - 120, T))
+		# Top border step up
+		pts.append(Vector2(mid_x - 110, T - 6))
+		# Top border raised center segment
+		pts.append(Vector2(mid_x + 110, T - 6))
+		# Top border step down
+		pts.append(Vector2(mid_x + 120, T))
+		# Top border right segment
+		pts.append(Vector2(R - 12, T))
+		# Top-right corner bevel
+		pts.append(Vector2(R, T + 12))
+		# Right border
+		pts.append(Vector2(R, B - 12))
+		# Bottom-right corner bevel
+		pts.append(Vector2(R - 12, B))
+		# Bottom border right segment
+		pts.append(Vector2(mid_x + 120, B))
+		# Bottom border step down
+		pts.append(Vector2(mid_x + 110, B + 6))
+		# Bottom border lowered center segment
+		pts.append(Vector2(mid_x - 110, B + 6))
+		# Bottom border step up
+		pts.append(Vector2(mid_x - 120, B))
+		# Bottom border left segment
+		pts.append(Vector2(L + 12, B))
+		# Bottom-left corner bevel
+		pts.append(Vector2(L, B - 12))
+		# Left border
+		pts.append(Vector2(L, T + 12))
+		# Close loop
+		pts.append(Vector2(L + 12, T))
+		
+		# Draw outer soft glow passes
+		draw_polyline(pts, Color(0.0, 0.85, 1.0, 0.05), 10.0, true)
+		draw_polyline(pts, Color(0.0, 0.85, 1.0, 0.15), 6.0, true)
+		draw_polyline(pts, Color(0.0, 0.85, 1.0, 0.3), 3.0, true)
+		# Draw core neon cyan line
+		draw_polyline(pts, Color(0.0, 0.85, 1.0, 0.75), 1.5, true)
+		
+		# Draw corner decorative accents parallel to the bevels for a futuristic feel
+		draw_line(Vector2(L + 16, T - 3), Vector2(L - 3, T + 16), Color(0.0, 0.85, 1.0, 0.5), 1.0, true)
+		draw_line(Vector2(R - 16, T - 3), Vector2(R + 3, T + 16), Color(0.0, 0.85, 1.0, 0.5), 1.0, true)
+		draw_line(Vector2(L + 16, B + 3), Vector2(L - 3, B - 16), Color(0.0, 0.85, 1.0, 0.5), 1.0, true)
+		draw_line(Vector2(R - 16, B + 3), Vector2(R + 3, B - 16), Color(0.0, 0.85, 1.0, 0.5), 1.0, true)

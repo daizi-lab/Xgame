@@ -657,17 +657,23 @@ func _run_player_auto_manage() -> void:
 								break
 						if not is_upgrading:
 							var lvl = p.buildings[idx].get("level", 0)
-							if lvl < min_lvl:
+							if lvl < 20 and lvl < min_lvl:
 								min_lvl = lvl
 								slot_to_upgrade = idx
 								
 				if slot_to_upgrade == -1:
-					var has_any = false
-					for b in p.buildings:
+					var has_upgradable = false
+					for idx in range(p.buildings.size()):
+						var b = p.buildings[idx]
 						if b["type"] == target_building:
-							has_any = true
-							break
-					if not has_any:
+							var pending = 0
+							for upg in p.active_upgrades:
+								if upg.get("slot_index", -1) == idx:
+									pending += 1
+							if b["level"] + pending < 20:
+								has_upgradable = true
+								break
+					if not has_upgradable:
 						for idx in range(p.buildings.size()):
 							if p.buildings[idx]["type"] == "empty":
 								slot_to_upgrade = idx
@@ -702,12 +708,20 @@ func _run_player_auto_manage() -> void:
 								p_frigate = d
 						
 						# Determine what we want to build based on resource pools
-						if res_pool["metal"] >= 10000 and res_pool["crystal"] >= 4870 and res_pool["deuterium"] >= 1000:
-							selected_design = p_cruiser if p_cruiser else c_design
-						elif res_pool["metal"] >= 3450 and res_pool["crystal"] >= 1710 and res_pool["deuterium"] >= 50:
-							selected_design = p_destroyer if p_destroyer else d_design
-						elif res_pool["metal"] >= 1330 and res_pool["crystal"] >= 645 and res_pool["deuterium"] >= 20:
-							selected_design = p_frigate if p_frigate else f_design
+						var target_c = p_cruiser if p_cruiser else c_design
+						var target_d = p_destroyer if p_destroyer else d_design
+						var target_f = p_frigate if p_frigate else f_design
+						
+						var cost_c = target_c.get_total_cost()
+						var cost_d = target_d.get_total_cost()
+						var cost_f = target_f.get_total_cost()
+						
+						if p._has_resources(cost_c, res_pool):
+							selected_design = target_c
+						elif p._has_resources(cost_d, res_pool):
+							selected_design = target_d
+						elif p._has_resources(cost_f, res_pool):
+							selected_design = target_f
 							
 						if selected_design:
 							var cost = selected_design.get_total_cost()
@@ -748,21 +762,21 @@ func _run_enemy_ai() -> void:
 		_run_ai_for_faction(faction)
 
 func _run_ai_for_faction(faction_name: String) -> void:
-	# Define default enemy ship designs for construction
+	# Define default enemy ship designs for construction (upgraded to be on par with player/neutral designs)
 	var f_design = ShipDesign.new(faction_name + "护卫舰", "frigate")
-	f_design.weapons = ["laser_light"]
-	f_design.shields = ["composite_armor_light"]
+	f_design.weapons = ["laser_light", "laser_light"]
+	f_design.shields = ["deflector_light", "composite_armor_light"]
 	f_design.utilities = ["afterburner"]
 	
 	var d_design = ShipDesign.new(faction_name + "驱逐舰", "destroyer")
-	d_design.weapons = ["missile_launcher"]
-	d_design.shields = ["deflector_light"]
-	d_design.utilities = ["cargo_hold"]
+	d_design.weapons = ["missile_launcher", "railgun_light"]
+	d_design.shields = ["deflector_light", "composite_armor_light"]
+	d_design.utilities = ["cargo_hold", "reactor_booster"]
 	
 	var c_design = ShipDesign.new(faction_name + "巡洋舰", "cruiser")
-	c_design.weapons = ["laser_heavy", "railgun_heavy"]
-	c_design.shields = ["deflector_heavy", "composite_armor_heavy"]
-	c_design.utilities = ["reactor_booster"]
+	c_design.weapons = ["laser_heavy", "railgun_heavy", "railgun_heavy"]
+	c_design.shields = ["deflector_heavy", "composite_armor_heavy", "composite_armor_heavy"]
+	c_design.utilities = ["reactor_booster", "reactor_booster", "afterburner"]
 
 	var faction_res = get_enemy_resource_pool(faction_name)
 
@@ -837,17 +851,23 @@ func _run_ai_for_faction(faction_name: String) -> void:
 								break
 						if not is_upgrading:
 							var lvl = p.buildings[idx].get("level", 0)
-							if lvl < min_lvl:
+							if lvl < 20 and lvl < min_lvl:
 								min_lvl = lvl
 								slot_to_upgrade = idx
 								
 				if slot_to_upgrade == -1:
-					var has_any = false
-					for b in p.buildings:
+					var has_upgradable = false
+					for idx in range(p.buildings.size()):
+						var b = p.buildings[idx]
 						if b["type"] == target_building:
-							has_any = true
-							break
-					if not has_any:
+							var pending = 0
+							for upg in p.active_upgrades:
+								if upg.get("slot_index", -1) == idx:
+									pending += 1
+							if b["level"] + pending < 20:
+								has_upgradable = true
+								break
+					if not has_upgradable:
 						for idx in range(p.buildings.size()):
 							if p.buildings[idx]["type"] == "empty":
 								slot_to_upgrade = idx
@@ -871,11 +891,15 @@ func _run_ai_for_faction(faction_name: String) -> void:
 						continue
 					if p.shipyard_queue.is_empty():
 						var selected_design = null
-						if faction_res["metal"] >= 10000 and faction_res["crystal"] >= 4870 and faction_res["deuterium"] >= 1000:
+						var cost_c = c_design.get_total_cost()
+						var cost_d = d_design.get_total_cost()
+						var cost_f = f_design.get_total_cost()
+						
+						if p._has_resources(cost_c, faction_res):
 							selected_design = c_design
-						elif faction_res["metal"] >= 3450 and faction_res["crystal"] >= 1710 and faction_res["deuterium"] >= 50:
+						elif p._has_resources(cost_d, faction_res):
 							selected_design = d_design
-						elif faction_res["metal"] >= 1330 and faction_res["crystal"] >= 645 and faction_res["deuterium"] >= 20:
+						elif p._has_resources(cost_f, faction_res):
 							selected_design = f_design
 							
 						if selected_design:

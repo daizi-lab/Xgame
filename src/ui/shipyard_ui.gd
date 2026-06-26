@@ -48,6 +48,7 @@ func _ready() -> void:
 		var info_hbox = HBoxContainer.new()
 		info_hbox.name = "ShipInfoHBox"
 		info_hbox.add_theme_constant_override("separation", 20)
+		info_hbox.size_flags_horizontal = SIZE_EXPAND_FILL
 		detail_layout.add_child(info_hbox)
 		detail_layout.move_child(info_hbox, 1) # Put after first Spacer
 		
@@ -73,13 +74,22 @@ func _ready() -> void:
 		preview_panel.add_child(preview_tex)
 		info_hbox.add_child(preview_panel)
 		
-		# Right side: Specs VBox
+		# Right side: Specs ScrollContainer & VBox
+		var specs_scroll = ScrollContainer.new()
+		specs_scroll.name = "SpecsScrollContainer"
+		specs_scroll.size_flags_horizontal = SIZE_EXPAND_FILL
+		specs_scroll.size_flags_vertical = SIZE_EXPAND_FILL
+		specs_scroll.custom_minimum_size = Vector2(0, 115)
+		specs_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		specs_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		info_hbox.add_child(specs_scroll)
+		
 		var specs_vbox = VBoxContainer.new()
 		specs_vbox.name = "SpecsVBox"
 		specs_vbox.add_theme_constant_override("separation", 6)
 		specs_vbox.size_flags_horizontal = SIZE_EXPAND_FILL
-		specs_vbox.size_flags_vertical = SIZE_SHRINK_CENTER
-		info_hbox.add_child(specs_vbox)
+		specs_vbox.size_flags_vertical = SIZE_EXPAND_FILL
+		specs_scroll.add_child(specs_vbox)
 		
 		# Add labels
 		specs_vbox.add_child(name_lbl)
@@ -88,10 +98,11 @@ func _ready() -> void:
 		# Polish font size and styles
 		name_lbl.add_theme_font_size_override("font_size", 13)
 		name_lbl.add_theme_color_override("font_color", Color(0.0, 0.85, 0.95))
-		name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_lbl.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 		
 		stats_lbl.add_theme_font_size_override("font_size", 11)
-		stats_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		stats_lbl.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+		stats_lbl.custom_minimum_size = Vector2(200, 0)
 		
 		# Programmatically rebuild BuildControl with cyberpunk styled panel and quick buttons
 		var build_control = detail_layout.get_node_or_null("BuildControl")
@@ -117,16 +128,17 @@ func _ready() -> void:
 			panel_style.content_margin_bottom = 12
 			build_panel.add_theme_stylebox_override("panel", panel_style)
 			
-			var main_hbox = HBoxContainer.new()
-			main_hbox.add_theme_constant_override("separation", 15)
-			main_hbox.size_flags_horizontal = SIZE_EXPAND_FILL
-			build_panel.add_child(main_hbox)
+			var main_vbox = VBoxContainer.new()
+			main_vbox.add_theme_constant_override("separation", 10)
+			main_vbox.size_flags_horizontal = SIZE_EXPAND_FILL
+			build_panel.add_child(main_vbox)
 			
-			# Left: Quantity control HBox
+			# Row 1: Quantity control HBox
 			var qty_hbox = HBoxContainer.new()
 			qty_hbox.add_theme_constant_override("separation", 6)
+			qty_hbox.size_flags_horizontal = SIZE_EXPAND_FILL
 			qty_hbox.size_flags_vertical = SIZE_SHRINK_CENTER
-			main_hbox.add_child(qty_hbox)
+			main_vbox.add_child(qty_hbox)
 			
 			var qty_lbl = Label.new()
 			qty_lbl.text = "建造数量:"
@@ -202,16 +214,21 @@ func _ready() -> void:
 				)
 				qty_hbox.add_child(qbtn)
 				
-			# Spacer
-			var mid_spacer = Control.new()
-			mid_spacer.size_flags_horizontal = SIZE_EXPAND_FILL
-			main_hbox.add_child(mid_spacer)
+			# Spacer to push quick buttons to the left
+			var qty_spacer = Control.new()
+			qty_spacer.size_flags_horizontal = SIZE_EXPAND_FILL
+			qty_hbox.add_child(qty_spacer)
 			
-			# Right: Cost & Build Button HBox
+			# Horizontal separator line
+			var divider = HSeparator.new()
+			main_vbox.add_child(divider)
+			
+			# Row 2: Cost & Buttons HBox
 			var right_hbox = HBoxContainer.new()
 			right_hbox.add_theme_constant_override("separation", 15)
+			right_hbox.size_flags_horizontal = SIZE_EXPAND_FILL
 			right_hbox.size_flags_vertical = SIZE_SHRINK_CENTER
-			main_hbox.add_child(right_hbox)
+			main_vbox.add_child(right_hbox)
 			
 			# Reparent cost text
 			total_cost_text.get_parent().remove_child(total_cost_text)
@@ -220,10 +237,15 @@ func _ready() -> void:
 			total_cost_text.size_flags_vertical = SIZE_SHRINK_CENTER
 			total_cost_text.autowrap_mode = TextServer.AUTOWRAP_OFF
 			
+			# Spacer to push buttons to the right
+			var btn_spacer = Control.new()
+			btn_spacer.size_flags_horizontal = SIZE_EXPAND_FILL
+			right_hbox.add_child(btn_spacer)
+			
 			# Reparent build button
 			build_button.get_parent().remove_child(build_button)
 			right_hbox.add_child(build_button)
-			build_button.custom_minimum_size = Vector2(130, 32)
+			build_button.custom_minimum_size = Vector2(110, 30)
 			build_button.size_flags_vertical = SIZE_SHRINK_CENTER
 			
 			# Glowing neon cyan styleboxes for the build button
@@ -293,7 +315,7 @@ func _ready() -> void:
 			delete_button = Button.new()
 			delete_button.name = "DeleteBlueprintButton"
 			delete_button.text = "删除蓝图"
-			delete_button.custom_minimum_size = Vector2(90, 32)
+			delete_button.custom_minimum_size = Vector2(85, 30)
 			delete_button.size_flags_vertical = SIZE_SHRINK_CENTER
 			right_hbox.add_child(delete_button)
 			
@@ -762,16 +784,142 @@ func _on_delete_blueprint_pressed() -> void:
 	if selected_bp_name == "" or not blueprints.has(selected_bp_name):
 		return
 		
-	blueprints.erase(selected_bp_name)
+	# Create a dim background overlay to block input
+	var overlay = ColorRect.new()
+	overlay.name = "ConfirmOverlay"
+	overlay.color = Color(0.04, 0.05, 0.07, 0.8)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	overlay.grow_vertical = Control.GROW_DIRECTION_BOTH
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(overlay)
 	
-	# Save updated blueprints to local file
-	var file = FileAccess.open(BLUEPRINTS_SAVE_PATH, FileAccess.WRITE)
-	if file:
-		var json_str = JSON.stringify(blueprints)
-		file.store_string(json_str)
-		file.close()
-		print("[ShipyardUI] Blueprint deleted successfully, updated: ", BLUEPRINTS_SAVE_PATH)
+	# CenterContainer to center the dialog panel perfectly
+	var center = CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	center.grow_vertical = Control.GROW_DIRECTION_BOTH
+	overlay.add_child(center)
+	
+	# Create a styled panel for the dialog box
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(340, 160)
+	panel.size_flags_horizontal = SIZE_SHRINK_CENTER
+	panel.size_flags_vertical = SIZE_SHRINK_CENTER
+	center.add_child(panel)
+	
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.06, 0.08, 0.12, 0.95)
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.border_color = Color(0.0, 0.75, 0.85, 0.8) # Neon cyan border
+	panel_style.corner_radius_top_left = 8
+	panel_style.corner_radius_top_right = 8
+	panel_style.corner_radius_bottom_left = 8
+	panel_style.corner_radius_bottom_right = 8
+	panel_style.shadow_color = Color(0.0, 0.75, 0.85, 0.15)
+	panel_style.shadow_size = 10
+	panel.add_theme_stylebox_override("panel", panel_style)
+	
+	# Layout inside the panel
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	panel.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 15)
+	margin.add_child(vbox)
+	
+	# Title
+	var title_lbl = Label.new()
+	title_lbl.text = "确认删除"
+	title_lbl.add_theme_font_size_override("font_size", 13)
+	title_lbl.add_theme_color_override("font_color", Color(0.0, 0.85, 1.0))
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title_lbl)
+	
+	# Message
+	var msg_lbl = Label.new()
+	msg_lbl.text = "您确定要删除蓝图“%s”吗？\n删除后将无法恢复。" % selected_bp_name
+	msg_lbl.add_theme_font_size_override("font_size", 11)
+	msg_lbl.add_theme_color_override("font_color", Color(0.85, 0.9, 0.95))
+	msg_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg_lbl.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	vbox.add_child(msg_lbl)
+	
+	# Buttons HBox
+	var btn_hbox = HBoxContainer.new()
+	btn_hbox.add_theme_constant_override("separation", 20)
+	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(btn_hbox)
+	
+	# Cancel Button
+	var cancel_btn = Button.new()
+	cancel_btn.text = "取消"
+	cancel_btn.custom_minimum_size = Vector2(80, 28)
+	cancel_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var c_style = StyleBoxFlat.new()
+	c_style.bg_color = Color(0.12, 0.15, 0.2, 0.8)
+	c_style.border_width_left = 1
+	c_style.border_width_top = 1
+	c_style.border_width_right = 1
+	c_style.border_width_bottom = 1
+	c_style.border_color = Color(0.4, 0.45, 0.5, 0.6)
+	c_style.corner_radius_top_left = 4
+	c_style.corner_radius_top_right = 4
+	c_style.corner_radius_bottom_left = 4
+	c_style.corner_radius_bottom_right = 4
+	cancel_btn.add_theme_stylebox_override("normal", c_style)
+	cancel_btn.add_theme_stylebox_override("hover", c_style.duplicate())
+	cancel_btn.get_theme_stylebox("hover").bg_color = Color(0.18, 0.22, 0.28, 0.9)
+	cancel_btn.add_theme_color_override("font_color", Color(0.7, 0.75, 0.8))
+	
+	# Confirm Button
+	var confirm_btn = Button.new()
+	confirm_btn.text = "确认"
+	confirm_btn.custom_minimum_size = Vector2(80, 28)
+	confirm_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var ok_style = StyleBoxFlat.new()
+	ok_style.bg_color = Color(0.35, 0.12, 0.12, 0.8)
+	ok_style.border_width_left = 1
+	ok_style.border_width_top = 1
+	ok_style.border_width_right = 1
+	ok_style.border_width_bottom = 1
+	ok_style.border_color = Color(1.0, 0.3, 0.2, 1.0)
+	ok_style.corner_radius_top_left = 4
+	ok_style.corner_radius_top_right = 4
+	ok_style.corner_radius_bottom_left = 4
+	ok_style.corner_radius_bottom_right = 4
+	confirm_btn.add_theme_stylebox_override("normal", ok_style)
+	confirm_btn.add_theme_stylebox_override("hover", ok_style.duplicate())
+	confirm_btn.get_theme_stylebox("hover").bg_color = Color(0.45, 0.15, 0.15, 0.9)
+	confirm_btn.add_theme_color_override("font_color", Color(1, 1, 1))
+	
+	btn_hbox.add_child(cancel_btn)
+	btn_hbox.add_child(confirm_btn)
+	
+	cancel_btn.pressed.connect(func():
+		overlay.queue_free()
+	)
+	
+	confirm_btn.pressed.connect(func():
+		blueprints.erase(selected_bp_name)
 		
-	# Refresh UI
-	_reload_blueprints()
-	_update_detail_view()
+		# Save updated blueprints to local file
+		var file = FileAccess.open(BLUEPRINTS_SAVE_PATH, FileAccess.WRITE)
+		if file:
+			var json_str = JSON.stringify(blueprints)
+			file.store_string(json_str)
+			file.close()
+			print("[ShipyardUI] Blueprint deleted successfully, updated: ", BLUEPRINTS_SAVE_PATH)
+			
+		selected_bp_name = ""
+		_reload_blueprints()
+		_update_detail_view()
+		overlay.queue_free()
+	)

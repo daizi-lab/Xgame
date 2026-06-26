@@ -276,10 +276,14 @@ func _process(_delta: float) -> void:
 						if demolish_btn:
 							demolish_btn.visible = true
 						var level = b["level"]
-						btn.text = "升级至 Lv.%d" % (level + 1)
-						var cost = planet.get_slot_upgrade_cost(slot_index)
-						var has_res = planet._has_resources(cost, global_resources)
-						btn.disabled = not has_res or queue_full
+						if level >= 20:
+							btn.text = "等级已满"
+							btn.disabled = true
+						else:
+							btn.text = "升级至 Lv.%d" % (level + 1)
+							var cost = planet.get_slot_upgrade_cost(slot_index)
+							var has_res = planet._has_resources(cost, global_resources)
+							btn.disabled = not has_res or queue_full
 
 func _rebuild_building_cards() -> void:
 	# Clear previous immediately from the tree to avoid stale child indexes
@@ -645,17 +649,22 @@ func _rebuild_building_cards() -> void:
 			vbox.add_child(lbl_stats)
 			
 			# Costs
-			var cost = planet.get_slot_upgrade_cost(slot_index)
 			var lbl_cost = RichTextLabel.new()
 			lbl_cost.bbcode_enabled = true
 			lbl_cost.fit_content = true
 			lbl_cost.autowrap_mode = TextServer.AUTOWRAP_OFF
-			lbl_cost.text = "消耗: [img=12]res://assets/images/resources/metal.png[/img]%d [img=12]res://assets/images/resources/crystal.png[/img]%d" % [cost.get("metal", 0), cost.get("crystal", 0)]
-			lbl_cost.add_theme_color_override("default_color", Color(0.9, 0.78, 0.35))
+			if level >= 20:
+				lbl_cost.text = "已达最高等级"
+				lbl_cost.add_theme_color_override("default_color", Color(0.65, 0.72, 0.85))
+				btn.text = "等级已满"
+				btn.disabled = true
+			else:
+				var cost = planet.get_slot_upgrade_cost(slot_index)
+				lbl_cost.text = "消耗: [img=12]res://assets/images/resources/metal.png[/img]%d [img=12]res://assets/images/resources/crystal.png[/img]%d" % [cost.get("metal", 0), cost.get("crystal", 0)]
+				lbl_cost.add_theme_color_override("default_color", Color(0.9, 0.78, 0.35))
+				btn.text = "升级至 Lv.%d" % (level + 1)
 			lbl_cost.add_theme_font_size_override("normal_font_size", 9)
 			vbox.add_child(lbl_cost)
-			
-			btn.text = "升级至 Lv.%d" % (level + 1)
 			
 		hbox.add_child(btn_container)
 		grid.add_child(card)

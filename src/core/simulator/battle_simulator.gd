@@ -140,13 +140,8 @@ static func simulate(
 			var attacker_name = "%s[%d]" % [attacker.design.design_name, attacker.combat_id]
 			var target_name = "%s[%d]" % [target.design.design_name, target.combat_id]
 			
-			# Fire all weapons equipped (unique weapon types only)
-			var unique_weapons = []
+			# Fire all weapons equipped
 			for w_id in attacker.design.weapons:
-				if not unique_weapons.has(w_id):
-					unique_weapons.append(w_id)
-					
-			for w_id in unique_weapons:
 				if target.is_destroyed():
 					# Select new target if previous target is destroyed
 					target = _select_random_target(target_fleet.active_ships)
@@ -300,4 +295,3 @@ static func _get_initial_ships_info(fleet: Fleet) -> Array:
 			"max_hp": ship.design.get_total_hull_hp()
 		})
 	return info
-
