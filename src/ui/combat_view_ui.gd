@@ -827,22 +827,25 @@ func _end_combat() -> void:
 	_show_settlement_screen()
 
 func _show_settlement_screen() -> void:
-	if has_node("SettlementPanel"):
+	if has_node("SettlementCenter"):
 		return
 		
 	var winner = report_data.get("winner")
 	var is_victory = (winner == "A")
 	
-	# Root container
+	# Root Center Container
+	var center = CenterContainer.new()
+	center.name = "SettlementCenter"
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	center.grow_vertical = Control.GROW_DIRECTION_BOTH
+	add_child(center)
+	
+	# Panel container
 	var panel = PanelContainer.new()
 	panel.name = "SettlementPanel"
 	panel.custom_minimum_size = Vector2(480, 320)
-	add_child(panel)
-	
-	# Set preset and center it
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	center.add_child(panel)
 	
 	# Glassmorphism StyleBox
 	var style = StyleBoxFlat.new()
