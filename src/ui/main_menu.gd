@@ -9,8 +9,8 @@ func _ready() -> void:
 	
 	# 1. Add Space Background Texture
 	var bg_texture = TextureRect.new()
-	bg_texture.texture = load("res://assets/images/galaxy/bg_space.png")
-	bg_texture.stretch_mode = TextureRect.STRETCH_TILE
+	bg_texture.texture = load("res://assets/images/galaxy/main_menu_bg.png")
+	bg_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	bg_texture.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg_texture)
 	move_child(bg_texture, 0)
