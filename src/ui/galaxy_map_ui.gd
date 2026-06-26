@@ -2196,9 +2196,43 @@ func _setup_dynamic_popups() -> void:
 	# Adjust separation inside inner containers to reduce minimum height
 	details_panel.add_theme_constant_override("separation", 8)
 	control_box.add_theme_constant_override("separation", 8)
+	
+	# Create a ScrollContainer for details_panel middle contents to prevent vertical overflow
+	var left_scroll = ScrollContainer.new()
+	left_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	
+	var left_scroll_vbox = VBoxContainer.new()
+	left_scroll_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_scroll_vbox.add_theme_constant_override("separation", 8)
+	left_scroll.add_child(left_scroll_vbox)
+	
+	# Reparent details contents (excluding header/title which we clean up)
+	var scroll_nodes = [
+		details_panel.get_node("InfoBox"),
+		planets_header,
+		planets_list,
+		details_panel.get_node("FleetsHeader"),
+		details_panel.get_node("FleetsScroll"),
+		unassigned_header,
+		unassigned_list
+	]
+	for snode in scroll_nodes:
+		if snode:
+			snode.get_parent().remove_child(snode)
+			left_scroll_vbox.add_child(snode)
+			
+	# Clean and style header
 	_clean_and_style_hud_header(details_panel, "星系详情 (Star System)", true, auto_manage_panel)
 	_clean_and_style_hud_header(control_box, "航行指令 (Navigation Command)")
-	details_panel.get_node("FleetsScroll").custom_minimum_size = Vector2(0, 80)
+	
+	# Add the scroll container to details_panel
+	details_panel.add_child(left_scroll)
+	
+	var f_scroll = fleets_list.get_parent() as ScrollContainer
+	if f_scroll:
+		f_scroll.custom_minimum_size = Vector2(0, 80)
 	
 	# Distribute columns evenly using PanelContainers
 	var left_col_panel = PanelContainer.new()
