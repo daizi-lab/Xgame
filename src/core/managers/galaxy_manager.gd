@@ -37,8 +37,24 @@ var ai_tick_timer: float = 0.0
 func _init() -> void:
 	pass
 
-func generate_galaxy() -> void:
-	_generate_default_galaxy()
+func get_enemy_resource_pool(faction_name: String) -> Dictionary:
+	if enemy_resources.has("metal") and not enemy_resources.has(faction_name):
+		if faction_name == "Enemy":
+			return enemy_resources
+		var old_res = enemy_resources.duplicate()
+		enemy_resources.clear()
+		enemy_resources["Enemy"] = old_res
+		
+	if not enemy_resources.has(faction_name):
+		enemy_resources[faction_name] = {
+			"metal": 1000.0,
+			"crystal": 1000.0,
+			"deuterium": 1000.0
+		}
+	return enemy_resources[faction_name]
+
+func generate_galaxy(faction_count: int = 1, map_size: String = "medium") -> void:
+	_generate_default_galaxy(faction_count, map_size)
 
 func _get_roman_num(idx: int) -> String:
 	match idx:
@@ -48,7 +64,7 @@ func _get_roman_num(idx: int) -> String:
 		4: return "IV"
 	return str(idx)
 
-func _generate_default_galaxy() -> void:
+func _generate_default_galaxy(faction_count: int = 1, map_size: String = "medium") -> void:
 	nodes.clear()
 	
 	# Determine if we are in multiplayer mode by checking the autoload NetworkManager
@@ -94,6 +110,8 @@ func _generate_default_galaxy() -> void:
 			names.append(comb_name)
 			
 	var generated_nodes = []
+	var planets_min = 1
+	var planets_max = 4
 	
 	if is_multiplayer:
 		# Multiplayer: 100 systems randomly distributed in 2000x2000 space
@@ -124,30 +142,113 @@ func _generate_default_galaxy() -> void:
 			generated_nodes.append(node)
 			system_count += 1
 	else:
-		# Singleplayer: 15-20 systems, fixed Sol & Arcturus
-		var num_nodes = randi_range(15, 20)
+		# Singleplayer layout configuration based on map_size
+		var num_nodes = 50
+		var sol_pos = Vector2(80, 250)
+		var x_min = 160.0
+		var x_max = 640.0
+		var y_min = 50.0
+		var y_max = 450.0
+		var min_dist = 85.0
 		
+		if map_size == "small":
+			num_nodes = 20
+			sol_pos = Vector2(80, 300)
+			x_min = 160.0
+			x_max = 800.0
+			y_min = 50.0
+			y_max = 550.0
+			min_dist = 85.0
+			planets_min = 1
+			planets_max = 2
+		elif map_size == "large":
+			num_nodes = 100
+			sol_pos = Vector2(80, 600)
+			x_min = 180.0
+			x_max = 1800.0
+			y_min = 50.0
+			y_max = 1200.0
+			min_dist = 100.0
+			planets_min = 2
+			planets_max = 5
+		else: # "medium"
+			num_nodes = 50
+			sol_pos = Vector2(80, 420)
+			x_min = 180.0
+			x_max = 1200.0
+			y_min = 50.0
+			y_max = 800.0
+			min_dist = 90.0
+			planets_min = 1
+			planets_max = 4
+			
 		# Place Sol (Player starting system - initially Neutral until selected)
-		var sol = GalaxyNode.new("sol", names[0], Vector2(80, 250), "Neutral")
+		var sol = GalaxyNode.new("sol", names[0], sol_pos, "Neutral")
 		add_node(sol)
 		generated_nodes.append(sol)
 		
-		# Place Arcturus (Enemy starting system)
-		var arcturus = GalaxyNode.new("arcturus", names[1], Vector2(720, 250), "Enemy")
-		add_node(arcturus)
-		generated_nodes.append(arcturus)
-		
-		var system_count = 2
+		# Place AI factions starting systems
+		var starting_nodes = []
+		for i in range(1, faction_count + 1):
+			var faction_name = "Enemy" if faction_count == 1 else "Enemy_" + str(i)
+			var node_id = "enemy_start_" + str(i)
+			var node_name = names[i]
+			
+			# Find a spaced position for this faction's start
+			var start_pos = Vector2.ZERO
+			var pos_attempts = 0
+			var min_dist_from_others = 200.0
+			var min_dist_from_sol = 220.0
+			if map_size == "small":
+				min_dist_from_others = 140.0
+				min_dist_from_sol = 160.0
+			elif map_size == "large":
+				min_dist_from_others = 300.0
+				min_dist_from_sol = 350.0
+				
+			while pos_attempts < 200:
+				pos_attempts += 1
+				var rx = randf_range(x_min + 50.0, x_max - 50.0)
+				var ry = randf_range(y_min + 50.0, y_max - 50.0)
+				var candidate = Vector2(rx, ry)
+				
+				if candidate.distance_to(sol_pos) < min_dist_from_sol:
+					continue
+				
+				var too_close = false
+				for placed in starting_nodes:
+					if candidate.distance_to(placed.position) < min_dist_from_others:
+						too_close = true
+						break
+				if too_close:
+					continue
+					
+				start_pos = candidate
+				break
+				
+			if start_pos == Vector2.ZERO:
+				# Fallback position spacing out
+				var fraction = float(i) / float(faction_count)
+				start_pos = Vector2(x_min + (x_max - x_min) * fraction, y_min + (y_max - y_min) * fraction)
+				
+			var node = GalaxyNode.new(node_id, node_name, start_pos, faction_name)
+			add_node(node)
+			generated_nodes.append(node)
+			starting_nodes.append(node)
+			
+		# Generate remaining random neutral nodes
+		var system_count = 1 + faction_count
 		var attempts = 0
-		while system_count < num_nodes and attempts < 250:
+		var max_attempts = 400 if map_size == "small" else (800 if map_size == "medium" else 1500)
+		while system_count < num_nodes and attempts < max_attempts:
 			attempts += 1
-			var x = randf_range(160.0, 640.0)
-			var y = randf_range(50.0, 450.0)
+			var x = randf_range(x_min, x_max)
+			var y = randf_range(y_min, y_max)
 			var pos = Vector2(x, y)
 			
 			var overlap = false
 			for n in generated_nodes:
-				if pos.distance_to(n.position) < 85.0:
+				if pos.distance_to(n.position) < min_dist:
 					overlap = true
 					break
 			if overlap:
@@ -157,7 +258,8 @@ func _generate_default_galaxy() -> void:
 			var node_name = names[system_count]
 			
 			var owner = "Neutral"
-			if system_count == 2 or system_count == 3:
+			# original balance: if only 1 faction, assign 2 random nodes to it as well
+			if faction_count == 1 and (system_count == 2 or system_count == 3):
 				owner = "Enemy"
 				
 			var node = GalaxyNode.new(node_id, node_name, pos, owner)
@@ -167,7 +269,7 @@ func _generate_default_galaxy() -> void:
 			
 	# Generate planets for each system
 	for node in generated_nodes:
-		var num_planets = randi_range(1, 4)
+		var num_planets = randi_range(planets_min, planets_max)
 		node.planets.clear()
 		for i in range(1, num_planets + 1):
 			var p_id = node.node_id + "_p" + str(i)
@@ -395,8 +497,8 @@ func tick(delta: float) -> void:
 				continue
 			elif p.owner_name == "Player":
 				p.tick(delta, 300.0, player_resources)
-			elif p.owner_name == "Enemy":
-				p.tick(delta, 300.0, enemy_resources)
+			elif p.owner_name.begins_with("Enemy"):
+				p.tick(delta, 300.0, get_enemy_resource_pool(p.owner_name))
 			elif p.owner_name.begins_with("peer_"):
 				# Lazy initialize resource pool for peer if needed
 				if not player_resources.has(p.owner_name):
@@ -620,35 +722,47 @@ func _run_player_auto_manage() -> void:
 			execute_upgrades.call()
 
 func _run_enemy_ai() -> void:
+	# Find all active AI factions
+	var ai_factions = []
+	for node in nodes.values():
+		if node.owner_name.begins_with("Enemy") and not ai_factions.has(node.owner_name):
+			ai_factions.append(node.owner_name)
+			
+	for faction in ai_factions:
+		_run_ai_for_faction(faction)
+
+func _run_ai_for_faction(faction_name: String) -> void:
 	# Define default enemy ship designs for construction
-	var f_design = ShipDesign.new("反抗军护卫舰", "frigate")
+	var f_design = ShipDesign.new(faction_name + "护卫舰", "frigate")
 	f_design.weapons = ["laser_light"]
 	f_design.shields = ["composite_armor_light"]
 	f_design.utilities = ["afterburner"]
 	
-	var d_design = ShipDesign.new("反抗军驱逐舰", "destroyer")
+	var d_design = ShipDesign.new(faction_name + "驱逐舰", "destroyer")
 	d_design.weapons = ["missile_launcher"]
 	d_design.shields = ["deflector_light"]
 	d_design.utilities = ["cargo_hold"]
 	
-	var c_design = ShipDesign.new("反抗军巡洋舰", "cruiser")
+	var c_design = ShipDesign.new(faction_name + "巡洋舰", "cruiser")
 	c_design.weapons = ["laser_heavy", "railgun_heavy"]
 	c_design.shields = ["deflector_heavy", "composite_armor_heavy"]
 	c_design.utilities = ["reactor_booster"]
 
+	var faction_res = get_enemy_resource_pool(faction_name)
+
 	for node_id in nodes:
 		var node = nodes[node_id]
-		if node.owner_name != "Enemy":
+		if node.owner_name != faction_name:
 			continue
 			
 		# Calculate total military ship count in the current system (fleets + hangars)
 		var total_ships = 0
 		for f in node.stationed_fleets:
-			if f.owner_name == "Enemy":
+			if f.owner_name == faction_name:
 				for d_name in f.ships:
 					total_ships += f.ships[d_name]
 		for p in node.planets:
-			if p.owner_name == "Enemy":
+			if p.owner_name == faction_name:
 				for d_name in p.hangar:
 					total_ships += p.hangar[d_name]
 					
@@ -658,7 +772,7 @@ func _run_enemy_ai() -> void:
 		# Define upgraded callable
 		var run_upgrades = func() -> void:
 			for p in node.planets:
-				if p.owner_name != "Enemy":
+				if p.owner_name != faction_name:
 					continue
 				if p.active_upgrades.size() >= 3:
 					continue
@@ -708,36 +822,35 @@ func _run_enemy_ai() -> void:
 							break
 							
 				if slot_to_upgrade != -1:
-					var success = p.start_building_upgrade(slot_to_upgrade, target_building, enemy_resources)
+					var success = p.start_building_upgrade(slot_to_upgrade, target_building, faction_res)
 					if success:
-						print("[Enemy AI] Started building/upgrading %s at planet %s" % [target_building, p.planet_name])
+						print("[%s AI] Started building/upgrading %s at planet %s" % [faction_name, target_building, p.planet_name])
 		
 		# Define ship construction callable
 		var run_ship_building = func() -> void:
 			var system_shipyard_lvl = 0
 			for p in node.planets:
-				if p.owner_name == "Enemy":
+				if p.owner_name == faction_name:
 					system_shipyard_lvl += p.get_building_total_level("shipyard")
 					
 			if system_shipyard_lvl > 0:
 				for p in node.planets:
-					if p.owner_name != "Enemy":
+					if p.owner_name != faction_name:
 						continue
 					if p.shipyard_queue.is_empty():
 						var selected_design = null
-						# Validate actual costs: Frigate (1330/645/20), Destroyer (3450/1710/50), Cruiser (10000/4870/1000)
-						if enemy_resources["metal"] >= 10000 and enemy_resources["crystal"] >= 4870 and enemy_resources["deuterium"] >= 1000:
+						if faction_res["metal"] >= 10000 and faction_res["crystal"] >= 4870 and faction_res["deuterium"] >= 1000:
 							selected_design = c_design
-						elif enemy_resources["metal"] >= 3450 and enemy_resources["crystal"] >= 1710 and enemy_resources["deuterium"] >= 50:
+						elif faction_res["metal"] >= 3450 and faction_res["crystal"] >= 1710 and faction_res["deuterium"] >= 50:
 							selected_design = d_design
-						elif enemy_resources["metal"] >= 1330 and enemy_resources["crystal"] >= 645 and enemy_resources["deuterium"] >= 20:
+						elif faction_res["metal"] >= 1330 and faction_res["crystal"] >= 645 and faction_res["deuterium"] >= 20:
 							selected_design = f_design
 							
 						if selected_design:
 							var cost = selected_design.get_total_cost()
-							var success = p.start_ship_construction(selected_design.design_name, selected_design.hull_id, 1, cost, selected_design, enemy_resources, system_shipyard_lvl)
+							var success = p.start_ship_construction(selected_design.design_name, selected_design.hull_id, 1, cost, selected_design, faction_res, system_shipyard_lvl)
 							if success:
-								print("[Enemy AI] Planet %s started constructing 1x %s with system shipyard lvl %d" % [p.planet_name, selected_design.design_name, system_shipyard_lvl])
+								print("[%s AI] Planet %s started constructing 1x %s with system shipyard lvl %d" % [faction_name, p.planet_name, selected_design.design_name, system_shipyard_lvl])
 
 		# Run based on priorities
 		if prioritize_military:
@@ -749,7 +862,7 @@ func _run_enemy_ai() -> void:
 
 		# 3. Fleet Formation
 		for p in node.planets:
-			if p.owner_name != "Enemy":
+			if p.owner_name != faction_name:
 				continue
 			if not p.hangar.is_empty():
 				var ships_to_add = {}
@@ -761,11 +874,11 @@ func _run_enemy_ai() -> void:
 				if not ships_to_add.is_empty():
 					var target_fleet: Fleet = null
 					for f in node.stationed_fleets:
-						if f.owner_name == "Enemy" and not f.is_moving:
+						if f.owner_name == faction_name and not f.is_moving:
 							target_fleet = f
 							break
 					if not target_fleet:
-						target_fleet = Fleet.new("反抗军联合编队", "Enemy")
+						target_fleet = Fleet.new(faction_name + "联合编队", faction_name)
 						target_fleet.current_node_id = node.node_id
 						node.add_fleet(target_fleet)
 						
@@ -783,11 +896,11 @@ func _run_enemy_ai() -> void:
 						p.hangar[d_name] -= qty
 						if p.hangar[d_name] <= 0:
 							p.hangar.erase(d_name)
-					print("[Enemy AI] Formed/reinforced fleet %s at %s" % [target_fleet.fleet_name, node.node_name])
+					print("[%s AI] Formed/reinforced fleet %s at %s" % [faction_name, target_fleet.fleet_name, node.node_name])
 
 		# 4. Fleet Movement & Aggression
 		for fleet in node.stationed_fleets:
-			if fleet.owner_name != "Enemy" or fleet.is_moving:
+			if fleet.owner_name != faction_name or fleet.is_moving:
 				continue
 				
 			var ship_count = 0
@@ -800,7 +913,7 @@ func _run_enemy_ai() -> void:
 				
 				for neighbor_id in node.connected_node_ids:
 					var neighbor = nodes[neighbor_id]
-					if neighbor.owner_name != "Enemy":
+					if neighbor.owner_name != faction_name:
 						# Calculate neighbor defense strength
 						var neighbor_defenders = 0
 						var has_stationed_defenders = false
@@ -834,11 +947,11 @@ func _run_enemy_ai() -> void:
 				if not target_nodes.is_empty() and randf() < 0.7:
 					var attack_target = target_nodes[randi() % target_nodes.size()]
 					dispatch_fleet(fleet, attack_target.node_id)
-					print("[Enemy AI] Dispatched fleet %s (size %d) to attack %s" % [fleet.fleet_name, ship_count, attack_target.node_name])
+					print("[%s AI] Dispatched fleet %s (size %d) to attack %s" % [faction_name, fleet.fleet_name, ship_count, attack_target.node_name])
 				elif not reinforce_nodes.is_empty() and randf() < 0.3:
 					var target_friend = reinforce_nodes[randi() % reinforce_nodes.size()]
 					dispatch_fleet(fleet, target_friend.node_id)
-					print("[Enemy AI] Dispatched fleet %s to reinforce %s" % [fleet.fleet_name, target_friend.node_name])
+					print("[%s AI] Dispatched fleet %s to reinforce %s" % [faction_name, fleet.fleet_name, target_friend.node_name])
 
 func _check_and_resolve_combat(node: GalaxyNode, arrived_fleet: Fleet) -> void:
 	if not arrived_fleet:
@@ -917,10 +1030,11 @@ func _check_and_resolve_combat(node: GalaxyNode, arrived_fleet: Fleet) -> void:
 			player_resources["metal"] += salvage.get("metal", 0)
 			player_resources["crystal"] += salvage.get("crystal", 0)
 			player_resources["deuterium"] += salvage.get("deuterium", 0)
-		elif winner_owner == "Enemy":
-			enemy_resources["metal"] += salvage.get("metal", 0)
-			enemy_resources["crystal"] += salvage.get("crystal", 0)
-			enemy_resources["deuterium"] += salvage.get("deuterium", 0)
+		elif winner_owner.begins_with("Enemy"):
+			var pool = get_enemy_resource_pool(winner_owner)
+			pool["metal"] += salvage.get("metal", 0)
+			pool["crystal"] += salvage.get("crystal", 0)
+			pool["deuterium"] += salvage.get("deuterium", 0)
 		elif winner_owner.begins_with("peer_"):
 			if not player_resources.has(winner_owner):
 				player_resources[winner_owner] = {
@@ -969,7 +1083,7 @@ func _create_garrison_fleet(owner_name: String) -> Fleet:
 		# Add 1 cruiser every 3 mins after 5 mins (300s)
 		if game_time_elapsed >= 300.0:
 			cruisers_qty = 1 + int((game_time_elapsed - 300.0) / 180.0)
-	elif owner_name == "Enemy":
+	elif owner_name.begins_with("Enemy"):
 		# Enemy: base 5 frigates. +1 frigate every 100s
 		frigates_qty = 5 + int(game_time_elapsed / 100.0)
 		# Add 1 destroyer every 100s after 2 mins (120s)

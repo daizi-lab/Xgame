@@ -17,6 +17,8 @@ const Fleet = preload("res://src/core/models/fleet.gd")
 @onready var content_container: PanelContainer = $VBox/ContentContainer
 
 static var should_load_save: bool = false
+static var custom_faction_count: int = 1
+static var custom_map_size: String = "medium"
 var galaxy_manager: GalaxyManager
 var autosave_timer: float = 0.0
 const SAVE_PATH = "user://savegame.dat"
@@ -64,14 +66,14 @@ func _ready() -> void:
 			else:
 				print("[MainGameHub] Failed to deserialize save file. Starting fresh.")
 				galaxy_manager = GalaxyManager.new()
-				galaxy_manager.generate_galaxy()
+				galaxy_manager.generate_galaxy(custom_faction_count, custom_map_size)
 		else:
 			print("[MainGameHub] Failed to open save file. Starting fresh.")
 			galaxy_manager = GalaxyManager.new()
-			galaxy_manager.generate_galaxy()
+			galaxy_manager.generate_galaxy(custom_faction_count, custom_map_size)
 	else:
 		galaxy_manager = GalaxyManager.new()
-		galaxy_manager.generate_galaxy()
+		galaxy_manager.generate_galaxy(custom_faction_count, custom_map_size)
 		
 	# Synchronize local galaxy manager reference to NetworkManager autoload for global access in UI
 	if not NetworkManager.is_multiplayer_active():
