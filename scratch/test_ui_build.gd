@@ -2,6 +2,17 @@ extends Node
 
 const MainGameHub = preload("res://src/ui/main_game_hub.gd")
 
+var NetworkManager
+
+func _enter_tree() -> void:
+	if not get_tree().root.has_node("NetworkManager"):
+		var nm_script = load("res://src/core/managers/network_manager.gd")
+		NetworkManager = nm_script.new()
+		NetworkManager.name = "NetworkManager"
+		get_tree().root.add_child(NetworkManager)
+	else:
+		NetworkManager = get_tree().root.get_node("NetworkManager")
+
 func _ready() -> void:
 	var args = OS.get_cmdline_args()
 	if args.has("--client"):

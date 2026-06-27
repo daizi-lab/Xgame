@@ -426,6 +426,15 @@ func dispatch_fleet(fleet: Fleet, target_id: String) -> bool:
 		print("[GalaxyManager] Cannot dispatch: no connected path from %s to %s." % [origin_id, target_id])
 		return false
 		
+	if is_reassignment:
+		for node_id_step in path:
+			if node_id_step != target_id:
+				if nodes.has(node_id_step):
+					var nd = nodes[node_id_step]
+					if nd.owner_name != fleet.owner_name and nd.owner_name != "Neutral" and not nd.owner_name.is_empty():
+						print("[GalaxyManager] Cannot dispatch reassignment: path passes through hostile system %s." % node_id_step)
+						return false
+						
 	fleet.movement_path = path
 	var next_target = fleet.movement_path.pop_front()
 	var next_node = nodes[next_target]
@@ -1103,8 +1112,11 @@ func _check_and_resolve_combat(node: GalaxyNode, arrived_fleet: Fleet) -> void:
 			player_resources[winner_owner]["deuterium"] += salvage.get("deuterium", 0)
 			
 		battle_occurred.emit(report)
-		if NetworkManager.is_server:
-			NetworkManager.broadcast_battle(self, report)
+		var main_loop = Engine.get_main_loop()
+		if main_loop and main_loop.root and main_loop.root.has_node("NetworkManager"):
+			var nm = main_loop.root.get_node("NetworkManager")
+			if nm.is_server:
+				nm.broadcast_battle(self, report)
 
 func _create_garrison_fleet(owner_name: String) -> Fleet:
 	var f = Fleet.new(owner_name + "守备队")

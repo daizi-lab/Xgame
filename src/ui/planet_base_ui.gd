@@ -723,7 +723,7 @@ func _get_building_stats_text(b_id: String, lvl: int) -> String:
 			var energy = 20 * lvl * pow(1.1, lvl)
 			return "产量: +%.1f 重氢/小时\n耗能: -%d 能量" % [prod, int(energy)]
 		"solar_power_plant":
-			var energy = 32 * lvl * pow(1.15, lvl)
+			var energy = 30 * lvl * pow(1.15, lvl)
 			return "发电力: +%d 能量\n消耗: 无" % int(energy)
 		"shipyard":
 			return "支持建造轻重型战斗飞船\n造船速度加成: x%d" % lvl

@@ -29,9 +29,9 @@ var active_upgrade: Dictionary = {}
 var shipyard_queue: Array[Dictionary] = []
 
 # Base yields per hour
-const BASE_METAL_HOUR: float = 30.0
-const BASE_CRYSTAL_HOUR: float = 15.0
-const BASE_DEUTERIUM_HOUR: float = 0.0
+const BASE_METAL_HOUR: float = 10.0
+const BASE_CRYSTAL_HOUR: float = 10.0
+const BASE_DEUTERIUM_HOUR: float = 10.0
 
 func _init() -> void:
 	pass
@@ -68,6 +68,13 @@ func get_building_upgrade_time(b_id: String) -> float:
 	return max(3.0, base_time)
 
 func start_building_upgrade(b_id: String) -> bool:
+	var valid_types = ["metal_mine", "crystal_mine", "deuterium_synthesizer", "solar_power_plant", "shipyard"]
+	if not b_id in valid_types:
+		return false
+		
+	if buildings.get(b_id, 0) >= 20:
+		return false
+		
 	if not active_upgrade.is_empty():
 		return false # Another upgrade is in progress
 		
@@ -123,41 +130,70 @@ func _has_resources(cost: Dictionary) -> bool:
 
 # Real-time ticking logic
 func tick(delta: float) -> void:
-	# 1. Resource production calculations
-	var metal_mine = buildings.get("metal_mine", 0)
-	var crystal_mine = buildings.get("crystal_mine", 0)
-	var deut_synth = buildings.get("deuterium_synthesizer", 0)
-	var solar_plant = buildings.get("solar_power_plant", 0)
-	
-	# Solar energy output
-	var energy_max = int(30 * solar_plant * pow(1.15, solar_plant))
-	
-	# Energy demands
-	var energy_needed = 0
-	energy_needed += int(10 * metal_mine * pow(1.1, metal_mine))
-	energy_needed += int(10 * crystal_mine * pow(1.1, crystal_mine))
-	energy_needed += int(20 * deut_synth * pow(1.1, deut_synth))
-	
-	# Energy efficiency factor
-	var efficiency: float = 1.0
-	if energy_needed > 0 and energy_max < energy_needed:
-		efficiency = float(energy_max) / float(energy_needed)
+	if delta <= 0.0:
+		return
 		
-	# Calculate raw hourly yields
-	var metal_yield = BASE_METAL_HOUR + (30 * metal_mine * pow(1.1, metal_mine)) * efficiency
-	var crystal_yield = BASE_CRYSTAL_HOUR + (20 * crystal_mine * pow(1.1, crystal_mine)) * efficiency
-	var deut_yield = BASE_DEUTERIUM_HOUR + (10 * deut_synth * pow(1.1, deut_synth)) * efficiency
-	
-	# Increment resources (scaled by GAME_SPEED to make it playable)
-	var tick_factor = (delta * GAME_SPEED) / 3600.0
-	metal += metal_yield * tick_factor
-	crystal += crystal_yield * tick_factor
-	deuterium += deut_yield * tick_factor
-	
-	# 2. Process active building upgrade
-	if not active_upgrade.is_empty():
-		active_upgrade["time_remaining"] -= delta
-		if active_upgrade["time_remaining"] <= 0.0:
+	var remaining_delta = delta
+	var max_iterations = 10000
+	while remaining_delta > 0.00001 and max_iterations > 0:
+		max_iterations -= 1
+		
+		# Determine next event time
+		var event_time = remaining_delta
+		
+		# Check active building upgrade
+		var has_upgrade = not active_upgrade.is_empty()
+		if has_upgrade:
+			var upg_time = active_upgrade["time_remaining"]
+			if upg_time < event_time:
+				event_time = upg_time
+				
+		# Check shipyard queue
+		var has_shipyard = not shipyard_queue.is_empty()
+		if has_shipyard:
+			var ship_time = shipyard_queue[0]["time_remaining_this_ship"]
+			if ship_time < event_time:
+				event_time = ship_time
+				
+		if event_time < 0.0:
+			event_time = 0.0
+			
+		# Tick resources for event_time
+		if event_time > 0.0:
+			var metal_mine = buildings.get("metal_mine", 0)
+			var crystal_mine = buildings.get("crystal_mine", 0)
+			var deut_synth = buildings.get("deuterium_synthesizer", 0)
+			var solar_plant = buildings.get("solar_power_plant", 0)
+			
+			var energy_max = int(30 * solar_plant * pow(1.15, solar_plant))
+			
+			var energy_needed = 0
+			energy_needed += int(10 * metal_mine * pow(1.1, metal_mine))
+			energy_needed += int(10 * crystal_mine * pow(1.1, crystal_mine))
+			energy_needed += int(20 * deut_synth * pow(1.1, deut_synth))
+			
+			var efficiency: float = 1.0
+			if energy_needed > 0 and energy_max < energy_needed:
+				efficiency = float(energy_max) / float(energy_needed)
+				
+			var metal_yield = (BASE_METAL_HOUR + (30 * metal_mine * pow(1.1, metal_mine))) * efficiency
+			var crystal_yield = (BASE_CRYSTAL_HOUR + (20 * crystal_mine * pow(1.1, crystal_mine))) * efficiency
+			var deut_yield = (BASE_DEUTERIUM_HOUR + (10 * deut_synth * pow(1.1, deut_synth))) * efficiency
+			
+			var tick_factor = (event_time * GAME_SPEED) / 3600.0
+			metal += metal_yield * tick_factor
+			crystal += crystal_yield * tick_factor
+			deuterium += deut_yield * tick_factor
+			
+			remaining_delta -= event_time
+			
+			if has_upgrade:
+				active_upgrade["time_remaining"] -= event_time
+			if has_shipyard:
+				shipyard_queue[0]["time_remaining_this_ship"] -= event_time
+				
+		# Process completions
+		if has_upgrade and active_upgrade["time_remaining"] <= 0.00001:
 			var b_id = active_upgrade["building_id"]
 			buildings[b_id] = buildings.get(b_id, 0) + 1
 			var new_lvl = buildings[b_id]
@@ -165,11 +201,8 @@ func tick(delta: float) -> void:
 			active_upgrade.clear()
 			building_completed.emit(b_id, new_lvl)
 			
-	# 3. Process shipyard queue
-	if not shipyard_queue.is_empty():
-		var current_batch = shipyard_queue[0]
-		current_batch["time_remaining_this_ship"] -= delta
-		if current_batch["time_remaining_this_ship"] <= 0.0:
+		if has_shipyard and shipyard_queue[0]["time_remaining_this_ship"] <= 0.00001:
+			var current_batch = shipyard_queue[0]
 			var d_name = current_batch["design_name"]
 			var h_id = current_batch["hull_id"]
 			
@@ -184,7 +217,7 @@ func tick(delta: float) -> void:
 # Helper properties retrieval
 func get_energy_max() -> int:
 	var solar_plant = buildings.get("solar_power_plant", 0)
-	return int(32 * solar_plant * pow(1.15, solar_plant))
+	return int(30 * solar_plant * pow(1.15, solar_plant))
 
 func get_energy_used() -> int:
 	var metal_mine = buildings.get("metal_mine", 0)

@@ -134,14 +134,11 @@ func _process(delta: float) -> void:
 				autosave_timer = 0.0
 				save_game()
 		
-		# Update Top Bar UI resources every 5 seconds
-		resource_refresh_timer += delta
-		if resource_refresh_timer >= 5.0:
-			resource_refresh_timer = 0.0
-			var my_res = NetworkManager.get_my_resources() if NetworkManager.is_multiplayer_active() else galaxy_manager.player_resources
-			metal_label.text = _format_large_number(my_res.get("metal", 0))
-			crystal_label.text = _format_large_number(my_res.get("crystal", 0))
-			deut_label.text = _format_large_number(my_res.get("deuterium", 0))
+		# Update Top Bar UI resources every frame
+		var my_res = NetworkManager.get_my_resources() if NetworkManager.is_multiplayer_active() else galaxy_manager.player_resources
+		metal_label.text = _format_large_number(my_res.get("metal", 0))
+		crystal_label.text = _format_large_number(my_res.get("crystal", 0))
+		deut_label.text = _format_large_number(my_res.get("deuterium", 0))
 		
 
 func _on_tab_pressed(tab_name: String) -> void:
@@ -341,7 +338,7 @@ func _format_large_number(val: float) -> String:
 	if val <= 0.0:
 		return "0"
 	if val < 1000.0:
-		return str(int(val))
+		return str(roundi(val))
 	elif val < 1000000.0:
 		var k_val = val / 1000.0
 		if k_val >= 100.0:

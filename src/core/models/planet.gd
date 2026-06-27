@@ -102,11 +102,30 @@ func get_slot_upgrade_time(slot_index: int, proposed_type: String = "") -> float
 	return max(3.0, base_time)
 
 func start_building_upgrade(slot_index: int, proposed_type: String, global_res: Dictionary) -> bool:
+	if slot_index < 0 or slot_index >= buildings.size():
+		return false
+		
+	var target_type = buildings[slot_index]["type"]
+	if target_type != "empty":
+		if proposed_type.is_empty() or proposed_type != target_type:
+			return false
+			
+	var valid_types = ["metal_mine", "crystal_mine", "deuterium_synthesizer", "solar_power_plant", "shipyard"]
+	if not proposed_type.is_empty() and not proposed_type in valid_types:
+		return false
+		
 	if active_upgrades.size() >= 3:
 		return false # Maximum 3 upgrades in queue
 		
-	if slot_index < 0 or slot_index >= buildings.size():
-		return false
+	# Check if there is already an active upgrade in active_upgrades with the same slot_index
+	for upg in active_upgrades:
+		if upg.get("slot_index", -1) == slot_index:
+			return false
+		
+	# Check if there is already an active upgrade in active_upgrades with the same slot_index
+	for upg in active_upgrades:
+		if upg.get("slot_index", -1) == slot_index:
+			return false
 		
 	if buildings[slot_index]["type"] == "empty" and proposed_type.is_empty():
 		return false
@@ -140,6 +159,15 @@ func start_building_upgrade(slot_index: int, proposed_type: String, global_res: 
 	return true
 
 func start_ship_construction(design_name: String, hull_id: String, qty: int, cost_per_ship: Dictionary, design_obj: RefCounted, global_res: Dictionary, system_shipyard_lvl: int = 0) -> bool:
+	if qty <= 0 or qty > 1000000:
+		return false
+		
+	var shipyard_lvl = system_shipyard_lvl
+	if shipyard_lvl <= 0:
+		shipyard_lvl = get_building_total_level("shipyard")
+	if shipyard_lvl <= 0:
+		return false
+		
 	var total_cost = {}
 	for res in ["metal", "crystal", "deuterium"]:
 		total_cost[res] = cost_per_ship.get(res, 0) * qty
@@ -155,13 +183,8 @@ func start_ship_construction(design_name: String, hull_id: String, qty: int, cos
 	# Cache the design so we can reconstruct it when forming a fleet
 	designs[design_name] = design_obj
 	
-	# Calculate build time per ship based on system-wide shipyard level
+	# Calculate build time per ship based on shipyard level
 	var sum_cost = cost_per_ship.get("metal", 0) + cost_per_ship.get("crystal", 0)
-	var shipyard_lvl = system_shipyard_lvl
-	if shipyard_lvl <= 0:
-		shipyard_lvl = get_building_total_level("shipyard")
-	shipyard_lvl = max(1, shipyard_lvl)
-	
 	var time_per_ship = max(1.0, (sum_cost / 1000.0) / float(shipyard_lvl))
 	
 	shipyard_queue.append({
@@ -195,40 +218,69 @@ func get_energy_used() -> int:
 	return energy_needed
 
 func tick(delta: float, game_speed: float, global_res: Dictionary) -> void:
+	if delta <= 0.0:
+		return
 	if owner_name == "Neutral":
 		# Neutral planets do not produce resources or advance queues
 		return
 		
-	# 1. Resource production calculations
-	var metal_mine = get_building_total_level("metal_mine")
-	var crystal_mine = get_building_total_level("crystal_mine")
-	var deut_synth = get_building_total_level("deuterium_synthesizer")
-	
-	var energy_max = get_energy_max()
-	var energy_needed = get_energy_used()
-	
-	var metal_yield = 0.0
-	var crystal_yield = 0.0
-	var deut_yield = 0.0
-	
-	var efficiency: float = 1.0
-	if energy_needed > energy_max:
-		efficiency = float(energy_max) / float(energy_needed) if energy_needed > 0 else 1.0
+	var remaining_delta = delta
+	var max_iterations = 10000
+	while remaining_delta > 0.00001 and max_iterations > 0:
+		max_iterations -= 1
 		
-	metal_yield = (BASE_METAL_HOUR + (30 * metal_mine * pow(1.1, metal_mine))) * efficiency
-	crystal_yield = (BASE_CRYSTAL_HOUR + (20 * crystal_mine * pow(1.1, crystal_mine))) * efficiency
-	deut_yield = (BASE_DEUTERIUM_HOUR + (10 * deut_synth * pow(1.1, deut_synth))) * efficiency
+		# 1. Determine next event time
+		var event_time = remaining_delta
 		
-	var tick_factor = (delta * game_speed) / 3600.0
-	global_res["metal"] += metal_yield * tick_factor
-	global_res["crystal"] += crystal_yield * tick_factor
-	global_res["deuterium"] += deut_yield * tick_factor
-	
-	# 2. Process active building upgrade
-	if not active_upgrades.is_empty():
-		var current = active_upgrades[0]
-		current["time_remaining"] -= delta
-		if current["time_remaining"] <= 0.0:
+		# Check time remaining on first active building upgrade
+		var has_upgrade = not active_upgrades.is_empty()
+		if has_upgrade:
+			var upg_time = active_upgrades[0]["time_remaining"]
+			if upg_time < event_time:
+				event_time = upg_time
+				
+		# Check time remaining on first shipyard queue batch
+		var has_shipyard = not shipyard_queue.is_empty()
+		if has_shipyard:
+			var ship_time = shipyard_queue[0]["time_remaining_this_ship"]
+			if ship_time < event_time:
+				event_time = ship_time
+				
+		if event_time < 0.0:
+			event_time = 0.0
+			
+		# 2. Tick resources for event_time
+		if event_time > 0.0:
+			var metal_mine = get_building_total_level("metal_mine")
+			var crystal_mine = get_building_total_level("crystal_mine")
+			var deut_synth = get_building_total_level("deuterium_synthesizer")
+			
+			var energy_max = get_energy_max()
+			var energy_needed = get_energy_used()
+			
+			var efficiency: float = 1.0
+			if energy_needed > energy_max:
+				efficiency = float(energy_max) / float(energy_needed) if energy_needed > 0 else 1.0
+				
+			var metal_yield = (BASE_METAL_HOUR + (30 * metal_mine * pow(1.1, metal_mine))) * efficiency
+			var crystal_yield = (BASE_CRYSTAL_HOUR + (20 * crystal_mine * pow(1.1, crystal_mine))) * efficiency
+			var deut_yield = (BASE_DEUTERIUM_HOUR + (10 * deut_synth * pow(1.1, deut_synth))) * efficiency
+				
+			var tick_factor = (event_time * game_speed) / 3600.0
+			global_res["metal"] += metal_yield * tick_factor
+			global_res["crystal"] += crystal_yield * tick_factor
+			global_res["deuterium"] += deut_yield * tick_factor
+			
+			remaining_delta -= event_time
+			
+			if has_upgrade:
+				active_upgrades[0]["time_remaining"] -= event_time
+			if has_shipyard:
+				shipyard_queue[0]["time_remaining_this_ship"] -= event_time
+				
+		# 3. Process completions
+		if has_upgrade and active_upgrades[0]["time_remaining"] <= 0.00001:
+			var current = active_upgrades[0]
 			var slot_idx = current["slot_index"]
 			var proposed = current["proposed_type"]
 			var b = buildings[slot_idx]
@@ -245,11 +297,8 @@ func tick(delta: float, game_speed: float, global_res: Dictionary) -> void:
 			building_completed.emit(b_id, new_lvl)
 			print("[Planet] %s built/upgraded %s to level %d in slot %d" % [planet_name, b_id, new_lvl, slot_idx])
 			
-	# 3. Process shipyard queue
-	if not shipyard_queue.is_empty():
-		var current_batch = shipyard_queue[0]
-		current_batch["time_remaining_this_ship"] -= delta
-		if current_batch["time_remaining_this_ship"] <= 0.0:
+		if has_shipyard and shipyard_queue[0]["time_remaining_this_ship"] <= 0.00001:
+			var current_batch = shipyard_queue[0]
 			var d_name = current_batch["design_name"]
 			var h_id = current_batch["hull_id"]
 			
@@ -273,6 +322,9 @@ func demolish_building(slot_index: int) -> bool:
 		
 	var b = buildings[slot_index]
 	if b["type"] == "empty":
+		return false
+		
+	if b["type"] == "shipyard" and not shipyard_queue.is_empty():
 		return false
 		
 	# Check if this slot has an active upgrade/construction running

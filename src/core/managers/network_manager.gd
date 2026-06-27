@@ -9,6 +9,7 @@ const GalaxyManager = preload("res://src/core/managers/galaxy_manager.gd")
 const Planet = preload("res://src/core/models/planet.gd")
 const Fleet = preload("res://src/core/models/fleet.gd")
 const ShipDesign = preload("res://src/core/models/ship_design.gd")
+const ComponentsData = preload("res://src/core/data/components_data.gd")
 
 var is_server: bool = false
 var client_name: String = "Player"
@@ -190,11 +191,33 @@ func _on_server_disconnected() -> void:
 
 # ----------------- Lobby Room RPCs -----------------
 
+func _leave_current_room(peer_id: int) -> void:
+	var room_name = peer_to_room.get(peer_id)
+	if not room_name or not rooms.has(room_name):
+		return
+		
+	var room = rooms[room_name]
+	room["peers"].erase(peer_id)
+	room["ready_states"].erase(peer_id)
+	peer_to_room.erase(peer_id)
+	
+	if room["peers"].is_empty():
+		rooms.erase(room_name)
+		print("[NetworkManager] Room '%s' is empty, deleted." % room_name)
+	else:
+		if room["host_id"] == peer_id:
+			var new_host = room["peers"].keys()[0]
+			room["host_id"] = new_host
+			room["ready_states"][new_host] = true
+			print("[NetworkManager] Host left room '%s'. New host is peer %d" % [room_name, new_host])
+		_broadcast_room_state(room_name)
+
 @rpc("any_peer", "reliable")
 func server_request_create_room(room_name: String, password: String, player_name: String) -> void:
 	if not is_server:
 		return
 	var sender_id = multiplayer.get_remote_sender_id()
+	_leave_current_room(sender_id)
 	room_name = room_name.strip_edges()
 	if room_name.is_empty():
 		rpc_id(sender_id, "client_receive_lobby_error", "房间名称不能为空！")
@@ -226,6 +249,7 @@ func server_request_join_room(room_name: String, password: String, player_name: 
 	if not is_server:
 		return
 	var sender_id = multiplayer.get_remote_sender_id()
+	_leave_current_room(sender_id)
 	room_name = room_name.strip_edges()
 	if not rooms.has(room_name):
 		rpc_id(sender_id, "client_receive_lobby_error", "房间不存在！")
@@ -508,6 +532,18 @@ func server_request_upgrade_building(planet_id: String, slot_index: int, propose
 		return
 	var res_pool = gm.player_resources[faction_name]
 	
+	# Validation checks
+	if slot_index < 0 or slot_index >= planet.buildings.size():
+		return
+	var valid_types = ["metal_mine", "crystal_mine", "deuterium_synthesizer", "solar_power_plant", "shipyard"]
+	var existing_type = planet.buildings[slot_index]["type"]
+	if existing_type == "empty":
+		if not proposed_type in valid_types:
+			return
+	else:
+		if proposed_type != existing_type:
+			return
+			
 	if planet.start_building_upgrade(slot_index, proposed_type, res_pool):
 		print("[NetworkManager] Peer %d start upgrade/build in slot %d in room %s" % [sender_id, slot_index, room_name])
 		_broadcast_room_universe_update(room_name)
@@ -546,6 +582,15 @@ func server_request_ship_construction_with_design(planet_id: String, design_name
 	design_obj.shields = design_dict.get("shields", [])
 	design_obj.utilities = design_dict.get("utilities", [])
 	
+	# Validation checks
+	if quantity <= 0 or quantity > 1000000:
+		return
+	var hull_id = design_dict.get("hull_id", "")
+	if not ComponentsData.HULLS.has(hull_id):
+		return
+	if not design_obj.is_valid():
+		return
+		
 	if not gm.player_resources.has(faction_name):
 		return
 	var res_pool = gm.player_resources[faction_name]
@@ -621,6 +666,8 @@ func server_request_toggle_auto_manage(node_id: String, enabled: bool, target: S
 
 @rpc("any_peer", "reliable")
 func server_request_form_fleet(planet_id: String, fleet_name: String, ships_dict: Dictionary) -> void:
+	if ships_dict.is_empty():
+		return
 	if not is_server:
 		return
 	var sender_id = multiplayer.get_remote_sender_id()
@@ -634,7 +681,7 @@ func server_request_form_fleet(planet_id: String, fleet_name: String, ships_dict
 		
 	var faction_name = "peer_" + str(sender_id)
 	var planet: Planet = null
-	var node: GalaxyNode = null
+	var node = null
 	for n_id in gm.nodes:
 		var n = gm.nodes[n_id]
 		for p in n.planets:
@@ -646,6 +693,11 @@ func server_request_form_fleet(planet_id: String, fleet_name: String, ships_dict
 	if not planet or planet.owner_name != faction_name or not node:
 		return
 		
+	# Validate quantities are strictly positive
+	for d_name in ships_dict:
+		if ships_dict[d_name] <= 0:
+			return
+			
 	# Validate system-wide available ships
 	for d_name in ships_dict:
 		var qty_required = ships_dict[d_name]

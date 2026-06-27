@@ -13,7 +13,12 @@ const Fleet = preload("res://src/core/models/fleet.gd")
 			p.owner_name = value
 @export var connected_node_ids: Array[String] = []
 @export var stationed_fleets: Array[Fleet] = []
-@export var planets: Array = []
+@export var planets: Array = []:
+	get:
+		for p in planets:
+			if p and p.owner_name != owner_name:
+				p.owner_name = owner_name
+		return planets
 @export var is_auto_managed: bool = false
 @export var auto_manage_target: String = "balanced" # "balanced", "economic", "military"
 
