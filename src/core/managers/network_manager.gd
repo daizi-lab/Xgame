@@ -28,15 +28,25 @@ var peer_to_room: Dictionary = {} # peer_id (int) -> room_name (String)
 var active_combats: Dictionary = {}
 
 func _ready() -> void:
-	# Set up global font and size theme (shrink to 12px)
-	_setup_global_theme()
-	
 	# Connect multiplayer signals
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
+	
+	# If running headless or with --server, host the game (unless it's a test client)
+	if (DisplayServer.get_name() == "headless" or OS.get_cmdline_args().has("--server")) and not OS.get_cmdline_args().has("--client"):
+		var max_players = 32
+		for arg in OS.get_cmdline_args():
+			if arg.begins_with("--max-players="):
+				max_players = int(arg.split("=")[1])
+			elif arg.begins_with("--max_players="):
+				max_players = int(arg.split("=")[1])
+		call_deferred("host_game", 9999, max_players)
+	else:
+		# Set up global font and size theme (shrink to 12px)
+		_setup_global_theme()
 
 func _setup_global_theme() -> void:
 	if DisplayServer.get_name() == "headless":
@@ -51,16 +61,6 @@ func _setup_global_theme() -> void:
 	theme.default_font = sys_font
 	theme.default_font_size = 12 # Shrunk globally from default 16
 	get_tree().root.theme = theme
-	
-	# If running headless or with --server, host the game (unless it's a test client)
-	if (DisplayServer.get_name() == "headless" or OS.get_cmdline_args().has("--server")) and not OS.get_cmdline_args().has("--client"):
-		var max_players = 32
-		for arg in OS.get_cmdline_args():
-			if arg.begins_with("--max-players="):
-				max_players = int(arg.split("=")[1])
-			elif arg.begins_with("--max_players="):
-				max_players = int(arg.split("=")[1])
-		call_deferred("host_game", 9999, max_players)
 
 func host_game(port: int, max_players: int = 32) -> bool:
 	var peer = ENetMultiplayerPeer.new()
