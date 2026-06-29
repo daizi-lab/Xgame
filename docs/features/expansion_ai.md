@@ -1,34 +1,34 @@
-# Feature: Idle/Auto-Management & Expansion AI
+# 功能：挂机/自动管理与扩张 AI
 
-## 1. Description & User Flow
-The **Idle/Auto-Management & Expansion AI** system controls enemy faction expansion and provides automation tools for players to automate base development. Players can toggle "Auto-Manage" on systems they own to automate building upgrades and ship construction according to predefined priorities. Non-player factions are controlled by the **Expansion AI**, which upgrades infrastructure, builds warships, assembles fleets in orbit, and launches attacks on adjacent systems.
+## 1. 说明与用户流程 (Description & User Flow)
+**挂机/自动管理与扩张 AI**系统控制敌对势力的扩张，并为玩家提供用于自动开发基地的自动化工具。玩家可以在其拥有的星系上切换“自动管理”选项，以根据预定义的优先级自动执行建筑升级和舰船建造。非玩家势力由**扩张 AI**控制，负责升级基础设施、建造战舰、在轨道上组建舰队并对相邻星系发起攻击。
 
-### User Flow:
-1. **Enabling Auto-Management**:
-   - The player selects an owned system on the map.
-   - In the sidebar header, they check the **Auto-Manage** box.
-   - They select a target mode from the dropdown list: **Balanced**, **Economic**, or **Military**.
-2. **AI Action**: The system runs automatically in the background, upgrading mines, building power plants, and constructing warships.
-3. **Enemy AI Expansion**: Enemy factions expand dynamically, building fleets and invading neutral or player-controlled star systems.
-
----
-
-## 2. Architecture & Code Entry Points
-The AI systems run server-side and update player states:
-
-- **Controller/Manager**:
-  - `src/core/managers/galaxy_manager.gd`: Runs the player auto-management loop (`_run_player_auto_manage()`), the enemy AI loop (`_run_enemy_ai()`, `_run_ai_for_faction()`), and handles neutral/hostile garrison spawning (`_create_garrison_fleet()`). Binds logic to a 10-second timer.
-- **Data Models**:
-  - `src/core/models/galaxy_node.gd`: Stores system configuration fields `is_auto_managed` and `auto_manage_target`.
-- **UI Scenes/Scripts**:
-  - `src/ui/galaxy_map_ui.gd`: Displays checkbox controls and target mode selection dropdowns in the sidebar header.
+### 用户流程：
+1. **启用自动管理**：
+   - 玩家在地图上选择一个拥有的星系。
+   - 在侧边栏的顶部，他们勾选**自动管理**复选框。
+   - 他们从下拉列表中选择一个目标模式：**平衡**、**经济**或**军事**。
+2. **AI 执行**：系统自动在后台运行，升级矿场、建造电站并建造战舰。
+3. **敌方 AI 扩张**：敌方势力动态扩张，建造舰队并入侵中立或玩家控制的星系。
 
 ---
 
-## 3. Technical Design & Algorithms
+## 2. 架构与代码入口 (Architecture & Code Entry Points)
+AI 系统在服务端运行并更新玩家状态：
 
-### AI Loop Ticking
-AI routines run server-side in `galaxy_manager.gd`'s `tick(delta)` loop, using a 10-second timer:
+- **控制器/管理器 (Controller/Manager)**：
+  - `src/core/managers/galaxy_manager.gd`：运行玩家自动管理循环 (`_run_player_auto_manage()`)、敌方 AI 循环 (`_run_enemy_ai()`、`_run_ai_for_faction()`)，并处理中立/敌对驻军生成 (`_create_garrison_fleet()`)。逻辑绑定到一个 10 秒的定时器。
+- **数据模型 (Data Models)**：
+  - `src/core/models/galaxy_node.gd`：存储星系配置字段 `is_auto_managed` and `auto_manage_target`。
+- **UI 场景/脚本 (UI Scenes/Scripts)**：
+  - `src/ui/galaxy_map_ui.gd`：在侧边栏头部显示复选框控件和目标模式选择下拉菜单。
+
+---
+
+## 3. 技术设计与算法 (Technical Design & Algorithms)
+
+### AI 循环刻度 (AI Loop Ticking)
+AI 例程在服务端 `galaxy_manager.gd` 的 `tick(delta)` 循环中运行，使用一个 10 秒的定时器：
 ```gdscript
 ai_tick_timer += delta
 if ai_tick_timer >= 10.0:
@@ -39,61 +39,61 @@ if ai_tick_timer >= 10.0:
 
 ---
 
-### Player Auto-Management Logic
-Auto-management evaluates system resource pools and upgrades planets based on the selected mode:
+### 玩家自动管理逻辑 (Player Auto-Management Logic)
+自动管理评估星系资源池，并根据所选模式升级行星：
 
-#### 1. Mode Selection Priorities
-* **Economic**: Focuses exclusively on building upgrades. Ship construction is disabled.
-* **Military**: Focuses on building ships, then upgrades shipyards and supporting infrastructure.
-* **Balanced**: If the system fleet size (fleets + hangars) is under 6 ships, prioritizes ship construction; otherwise, prioritizes infrastructure upgrades.
+#### 1. 模式选择优先级 (Mode Selection Priorities)
+* **经济 (Economic)**：专注于建筑升级。禁用舰船建造。
+* **军事 (Military)**：专注于建造舰船，然后升级造船厂和配套基础设施。
+* **平衡 (Balanced)**：如果系统舰队规模（舰队 + 机库）在 6 艘舰船以下，则优先进行舰船建造；否则，优先进行基础设施升级。
 
-#### 2. Building Upgrade Logic
-For each planet, the AI queues up to 3 building upgrades. If a queue slot is available, it evaluates needs in the following order:
-1. **Power Grid Check**: If power demand is close to capacity ($E_{\text{needed}} + 15 \ge E_{\text{max}}$), it upgrades a **Solar Power Plant**.
-2. **Shipyard Priority**: In military mode, it upgrades a **Space Shipyard** if none exist.
-3. **Mine Ratios**: It maintains a balanced ratio between metal, crystal, and deuterium production:
-   - If $Level_{\text{metal\_mine}} < Level_{\text{crystal\_mine}} \cdot 1.5$: upgrade **Metal Mine**.
-   - Else if $Level_{\text{crystal\_mine}} < Level_{\text{deut\_synth}} \cdot 2.0$: upgrade **Crystal Mine**.
-   - Else if $Level_{\text{deut\_synth}} < 3$: upgrade **Deuterium Synthesizer**.
-4. **Fallback**: If all mines are balanced, it selects a building based on weighted probabilities:
-   - *Metal Mine*: $40\%$
-   - *Crystal Mine*: $30\%$
-   - *Deuterium Synthesizer*: $15\%$
-   - *Space Shipyard*: $15\%$
-5. **Slot Allocation**: The AI searches for an existing building of the chosen type to upgrade. If none exist and the level limit ($20$) is reached, it builds in an empty slot.
+#### 2. 建筑升级逻辑 (Building Upgrade Logic)
+对于每个行星，AI 最多排队 3 个建筑升级。如果队列槽位可用，它会按以下顺序评估需求：
+1. **电网检查**：如果电力需求接近容量上限（$E_{\text{needed}} + 15 \ge E_{\text{max}}$），它会升级一个**太阳能电站**。
+2. **造船厂优先级**：在军事模式下，如果不存在**空间造船厂**，则会升级一个。
+3. **矿场比例**：它在金属、水晶和氘的产出之间保持平衡的比例：
+   - 如果 $Level_{\text{metal\_mine}} < Level_{\text{crystal\_mine}} \cdot 1.5$：升级**金属矿**。
+   - 否则，如果 $Level_{\text{crystal\_mine}} < Level_{\text{deut\_synth}} \cdot 2.0$：升级**水晶矿**。
+   - 否则，如果 $Level_{\text{deut\_synth}} < 3$：升级**氘合成器**。
+4. **后备方案**：如果所有矿场都已平衡，它会根据加权概率选择一个建筑：
+   - *金属矿*：$40\%$
+   - *水晶矿*：$30\%$
+   - *氘合成器*：$15\%$
+   - *空间造船厂*：$15\%$
+5. **槽位分配**：AI 搜索所选类型的现有建筑以进行升级。如果不存在且已达到等级上限 ($20$)，它将在空槽位中建造。
 
-#### 3. Warship Construction Logic
-The AI checks for active shipyards in the system and queues new builds. It prioritizes the most expensive ship design it can afford:
-1. If resources are sufficient, queues a **Cruiser** (using a custom blueprint if available, or the default design).
-2. Else if resources are sufficient, queues a **Destroyer**.
-3. Else if resources are sufficient, queues a **Frigate**.
-
----
-
-### Enemy Expansion AI Logic
-The Enemy AI controls expansion and fleet movements for AI factions.
-
-#### 1. Industrial Development
-The AI checks systems under its control. If a system contains fewer than 8 warships, it prioritizes ship construction; otherwise, it prioritizes infrastructure upgrades.
-
-#### 2. Hangar Fleet Assembly
-At each tick, the AI transfers completed ships from planet hangars to orbit. If no fleet is stationed in the system, it spawns a new fleet and assigns the ships to it.
-
-#### 3. Threat Assessment & Aggression
-If a stationed fleet contains at least 5 ships, the AI evaluates adjacent systems for movement:
-* **Defensive Assessment**: The AI calculates the defense strength of neighboring systems ($N_{\text{defenders}}$) by summing the ships in stationed fleets, or estimating the garrison strength based on game time elapsed.
-  - **Neutral Garrison Scaling**: Base 3 Frigates. Adds +1 Frigate every 120s, +1 Destroyer every 120s after 180s, and +1 Cruiser every 180s after 300s.
-  - **Enemy Garrison Scaling**: Base 5 Frigates. Adds +1 Frigate every 100s, +1 Destroyer every 100s after 120s, and +1 Cruiser every 150s after 240s.
-* **Action Decision**:
-  - **Attack**: If the fleet size $\ge \max(5, N_{\text{defenders}} + 2)$, the system is added to the attack list.
-  - **Reinforce**: If the adjacent system is owned by the same faction, it is added to the reinforce list.
-* **Dispatch Probability**:
-  - $70\%$ chance to dispatch the fleet to attack a system on the attack list.
-  - $30\%$ chance to dispatch the fleet to reinforce a system on the reinforce list.
+#### 3. 战舰建造逻辑 (Warship Construction Logic)
+AI 检查星系中是否有活跃的造船厂，并为新建造排队。它会优先建造它能负担得起的最昂贵的舰船设计：
+1. 如果资源充足，则为**巡洋舰**排队（如果有自定义蓝图则使用，否则使用默认设计）。
+2. 否则，如果资源充足，则为**驱逐舰**排队。
+3. 否则，如果资源充足，则为**护卫舰**排队。
 
 ---
 
-## 4. Development Status
-- **Current Status**: Completed.
-- **Recent Updates**: Implemented time-scaled garrisons for neutral and enemy star systems. Designed customized UI cards for auto-management and integrated them into the map sidebar.
-- **Known Issues / Tech Debts**: The AI does not coordinate fleet movements across multiple systems; fleets act independently at the system level.
+### 敌方扩张 AI 逻辑 (Enemy Expansion AI Logic)
+敌方 AI 控制 AI 势力的扩张和舰队移动。
+
+#### 1. 工业发展 (Industrial Development)
+AI 检查其控制下的星系。如果系统包含的战舰少于 8 艘，则优先进行舰船建造；否则，优先进行基础设施升级。
+
+#### 2. 机库舰队组装 (Hangar Fleet Assembly)
+在每个刻度 (tick) 时，AI 将已建造好的舰船从行星机库转移到轨道。如果星系中没有驻扎舰队，它将生成一支新舰队并将这些舰船分配给它。
+
+#### 3. 威胁评估与侵略度 (Threat Assessment & Aggression)
+如果驻扎舰队包含至少 5 艘舰船，AI 会评估相邻系统以进行移动：
+* **防御评估**：AI 通过对驻扎舰队中的舰船求和，或根据已过去的游戏时间估算驻军强度，来计算邻近系统的防御强度 ($N_{\text{defenders}}$)。
+  - **中立驻军缩放**：基础 3 艘护卫舰。120秒后每 120秒增加 +1 艘护卫舰，180秒后每 120秒增加 +1 艘驱逐舰，300秒后每 180秒增加 +1 艘巡洋舰。
+  - **敌方驻军缩放**：基础 5 艘护卫舰。100秒后每 100秒增加 +1 艘护卫舰，120秒后每 100秒增加 +1 艘驱逐舰，240秒后每 150秒增加 +1 艘巡洋舰。
+* **行动决策**：
+  - **攻击**：如果舰队规模 $\ge \max(5, N_{\text{defenders}} + 2)$，则将该系统添加到攻击列表中。
+  - **增援**：如果相邻系统属于同一势力，则将其添加到增援列表中。
+* **派遣概率**：
+  - $70\%$ 的概率派遣舰队攻击攻击列表中的系统。
+  - $30\%$ 的概率派遣舰队增援增援列表中的系统。
+
+---
+
+## 4. 开发状态 (Development Status)
+- **当前状态**：已完成。
+- **最近更新**：为中立和敌方星系实现了随时间缩放的驻军。设计了用于自动管理的自定义 UI 卡片，并将其集成到地图侧边栏中。
+- **已知问题 / 技术债务**：AI 不会在多个系统之间协调舰队移动；舰队在系统级别独立运作。
